@@ -114,6 +114,7 @@ function canvasOpts(oncloneCb?: (doc: Document, el: HTMLElement) => void) {
     windowWidth: DOC_WIDTH_PX,
     onclone: (doc: Document, el: HTMLElement) => {
       el.style.transform = 'none'
+      doc.documentElement.setAttribute('dir', 'rtl')
 
       // Remove overflow-hidden from all elements so html2canvas
       // does not clip content that extends beyond CSS bounds
@@ -195,14 +196,17 @@ function buildPage(
 
 /* ── Public API ── */
 
-export async function generatePdf(quote: Quote): Promise<void> {
+export async function generatePdfBlob(quote: Quote): Promise<Blob> {
   const root = document.getElementById('quote-document')
   if (!root) {
-    console.error('[PDF] quote-document element not found')
-    return
+    throw new Error('[PDF] quote-document element not found')
   }
 
-  const filename = `הצעת_מחיר_${quote.quoteNumber}_${quote.clientName || 'טיוטה'}.pdf`
+  // Temporarily remove any parent transform (e.g. scale(0.45) on mobile preview)
+  // so html2canvas getBoundingClientRect measurements are accurate.
+  const parent = root.parentElement as HTMLElement | null
+  const savedTransform = parent?.style.transform ?? ''
+  if (parent) parent.style.transform = 'none'
 
   try {
     const quoteBody = root.children[0] as HTMLElement
@@ -279,7 +283,22 @@ export async function generatePdf(quote: Quote): Promise<void> {
       pdf.addImage(imgData, 'JPEG', 0, 0, A4_W_MM, imgH)
     }
 
-    pdf.save(filename)
+    return pdf.output('blob')
+  } finally {
+    if (parent) parent.style.transform = savedTransform
+  }
+}
+
+export async function generatePdf(quote: Quote): Promise<void> {
+  try {
+    const blob = await generatePdfBlob(quote)
+    const filename = `הצעת_מחיר_${quote.quoteNumber}_${quote.clientName || 'טיוטה'}.pdf`
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(url)
   } catch (err) {
     console.error('[PDF] generation failed:', err)
     throw err
