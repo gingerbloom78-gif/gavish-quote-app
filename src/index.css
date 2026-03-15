@@ -1,0 +1,153 @@
+@import "tailwindcss";
+
+@theme {
+  --font-heebo: "Heebo", sans-serif;
+  --color-navy: #1e3a5f;
+  --color-navy-light: #2a4d7a;
+  --color-navy-dark: #152d4a;
+  --color-accent: #2563eb;
+  --color-accent-light: #3b82f6;
+  --color-surface: #f5f7fa;
+  --color-surface-card: #ffffff;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-doc-blue: #4FA8D5;
+  --color-doc-blue-mid: #7BC4E0;
+  --color-doc-blue-light: #D4EBF5;
+  --color-doc-blue-pale: #EAF4FA;
+  --color-doc-blue-dark: #2B7BAF;
+}
+
+* {
+  font-family: "Heebo", sans-serif;
+}
+
+body {
+  background-color: var(--color-surface);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Number inputs RTL ── */
+
+input[type="number"] {
+  direction: ltr;
+  text-align: right;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* ── Utility: glass morphism ── */
+@utility glass {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+@utility glass-strong {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* ── Animations ── */
+@utility animate-slide-up {
+  animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@utility animate-fade-in {
+  animation: fadeIn 0.25s ease-out;
+}
+
+@utility animate-scale-in {
+  animation: scaleIn 0.2s ease-out;
+}
+
+@utility animate-pulse-ring {
+  animation: pulseRing 1.5s ease-out infinite;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulseRing {
+  0% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(37, 99, 235, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ── Scrollbar ── */
+@utility scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Backdrop overlay ── */
+@utility backdrop-dim {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* ── Touch feedback ── */
+@utility touch-feedback {
+  transition: transform 0.1s ease, opacity 0.1s ease;
+}
+
+.touch-feedback:active {
+  transform: scale(0.97);
+  opacity: 0.9;
+}
+
+/* ── Premium shadow ── */
+@utility shadow-premium {
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.06),
+    0 4px 12px rgba(0, 0, 0, 0.05),
+    0 8px 24px rgba(0, 0, 0, 0.04);
+}
+
+/* ── Safe area padding (PWA) ── */
+@utility pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px);
+}
+
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}

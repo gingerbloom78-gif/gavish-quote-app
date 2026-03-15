@@ -1,0 +1,19 @@
+{
+  "name": "גביש - הצעות מחיר",
+  "short_name": "גביש",
+  "description": "אפליקציית הצעות מחיר לחברת גביש איטום",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f7fa",
+  "theme_color": "#1e3a5f",
+  "orientation": "portrait",
+  "dir": "rtl",
+  "lang": "he",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
