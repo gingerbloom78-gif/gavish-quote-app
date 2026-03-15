@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react'
 import type { Quote, QuoteLineItem, Client } from '../types'
 import { v4 as uuidv4 } from 'uuid'
 import { recalculateQuoteTotals } from '../utils/calculations'
@@ -8,6 +8,11 @@ import {
   loadClients, saveClients,
   initStorageWithSamples,
 } from '../services/storage'
+import {
+  fetchQuotes, upsertQuote, removeQuote,
+  fetchClients, upsertClient,
+} from '../services/supabaseStorage'
+import { supabase } from '../lib/supabase'
 
 interface QuoteContextType {
   quotes: Quote[]
@@ -115,19 +120,53 @@ export function QuoteProvider({ children }: { children: ReactNode }) {
   const [currentQuote, setCurrentQuote] = useState<Quote | null>(null)
 
   useEffect(() => {
-    const { quotes: q, clients: c } = initStorageWithSamples(sampleQuotes, sampleClients)
-    setQuotes(q)
-    setClients(c)
-    setIsReady(true)
+    if (supabase) {
+      // Load from Supabase
+      Promise.all([fetchQuotes(), fetchClients()]).then(([q, c]) => {
+        // Seed sample data into Supabase if empty
+        const quotes = q.length > 0 ? q : sampleQuotes
+        const clients = c.length > 0 ? c : sampleClients
+        if (q.length === 0) sampleQuotes.forEach((sq) => upsertQuote(sq))
+        if (c.length === 0) sampleClients.forEach((sc) => upsertClient(sc))
+        setQuotes(quotes)
+        setClients(clients)
+        setIsReady(true)
+      }).catch((err) => {
+        console.error('Supabase load failed, falling back to localStorage', err)
+        const { quotes: q2, clients: c2 } = initStorageWithSamples(sampleQuotes, sampleClients)
+        setQuotes(q2)
+        setClients(c2)
+        setIsReady(true)
+      })
+    } else {
+      // No Supabase configured — use localStorage
+      const { quotes: q, clients: c } = initStorageWithSamples(sampleQuotes, sampleClients)
+      setQuotes(q)
+      setClients(c)
+      setIsReady(true)
+    }
   }, [])
 
-  // Persist on change
+  // Sync changed quotes to Supabase (tracks updatedAt to avoid redundant writes)
+  const prevQuotesRef = useRef<Quote[]>([])
   useEffect(() => {
-    if (isReady) saveQuotes(quotes)
+    if (!isReady) return
+    if (supabase) {
+      const prevMap = new Map(prevQuotesRef.current.map((q) => [q.id, q]))
+      quotes.forEach((q) => {
+        const old = prevMap.get(q.id)
+        if (!old || old.updatedAt !== q.updatedAt) {
+          upsertQuote(q).catch(console.error)
+        }
+      })
+    } else {
+      saveQuotes(quotes)
+    }
+    prevQuotesRef.current = quotes
   }, [quotes, isReady])
 
   useEffect(() => {
-    if (isReady) saveClients(clients)
+    if (isReady && !supabase) saveClients(clients)
   }, [clients, isReady])
 
   const createNewQuote = useCallback((): Quote => {
@@ -168,6 +207,7 @@ export function QuoteProvider({ children }: { children: ReactNode }) {
 
   const deleteQuote = useCallback((id: string) => {
     setQuotes((prev) => prev.filter((q) => q.id !== id))
+    removeQuote(id).catch(console.error)
   }, [])
 
   const duplicateQuote = useCallback((id: string): Quote => {
@@ -252,6 +292,7 @@ export function QuoteProvider({ children }: { children: ReactNode }) {
   const addClient = useCallback((client: Omit<Client, 'id' | 'createdAt'>): Client => {
     const newClient: Client = { ...client, id: uuidv4(), createdAt: new Date().toISOString() }
     setClients((prev) => [...prev, newClient])
+    upsertClient(newClient).catch(console.error)
     return newClient
   }, [])
 
