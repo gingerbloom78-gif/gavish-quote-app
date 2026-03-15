@@ -211,7 +211,7 @@ function buildPage(
 
 /* ── Public API ── */
 
-export async function generatePdfBlob(quote: Quote): Promise<Blob> {
+export async function generatePdfBlob(_quote: Quote): Promise<Blob> {
   const root = document.getElementById('quote-document')
   if (!root) {
     throw new Error('[PDF] quote-document element not found')
