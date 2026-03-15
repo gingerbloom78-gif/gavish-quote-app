@@ -4,8 +4,8 @@ import { v4 as uuidv4 } from 'uuid'
 import { recalculateQuoteTotals } from '../utils/calculations'
 import { generateQuoteNumber, getTodayISO } from '../utils/formatters'
 import {
-  loadQuotes, saveQuotes,
-  loadClients, saveClients,
+  saveQuotes,
+  saveClients,
   initStorageWithSamples,
 } from '../services/storage'
 import {

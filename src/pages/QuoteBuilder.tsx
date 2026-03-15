@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   Hammer, Droplets, Paintbrush, Wrench, Building,
-  ArrowRight, Mic, Plus, Eye,
+  ArrowRight, Plus, Eye,
 } from 'lucide-react'
 import { useQuoteContext } from '../context/QuoteContext'
 import { catalog } from '../data/catalog'
