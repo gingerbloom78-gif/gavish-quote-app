@@ -114,7 +114,22 @@ function canvasOpts(oncloneCb?: (doc: Document, el: HTMLElement) => void) {
     windowWidth: DOC_WIDTH_PX,
     onclone: (doc: Document, el: HTMLElement) => {
       el.style.transform = 'none'
-      doc.documentElement.setAttribute('dir', 'rtl')
+      doc.documentElement.setAttribute('dir', 'ltr')
+
+      // Fix html2canvas RTL text rendering bug on iOS/WebKit.
+      // html2canvas reads positions from the original RTL DOM (already correct),
+      // but renders text using the clone's direction. Forcing ltr prevents
+      // character overlap while preserving all layout positions.
+      for (const node of [el, ...Array.from(el.querySelectorAll<HTMLElement>('*'))]) {
+        const cs = getComputedStyle(node)
+        if (cs.direction === 'rtl') {
+          node.style.direction = 'ltr'
+          // 'start' in RTL = right-aligned; make it explicit so it survives the ltr switch
+          if (cs.textAlign === 'start' || cs.textAlign === '-webkit-auto') {
+            node.style.textAlign = 'right'
+          }
+        }
+      }
 
       // Remove overflow-hidden from all elements so html2canvas
       // does not clip content that extends beyond CSS bounds
@@ -209,6 +224,9 @@ export async function generatePdfBlob(quote: Quote): Promise<Blob> {
   if (parent) parent.style.transform = 'none'
 
   try {
+    // Ensure web fonts (Heebo) are fully loaded before canvas capture
+    await document.fonts.ready
+
     const quoteBody = root.children[0] as HTMLElement
     const certEls = Array.from(root.children).filter(
       (el) => el.classList.contains('pdf-page-break'),
