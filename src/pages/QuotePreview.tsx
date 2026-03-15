@@ -24,7 +24,7 @@ export default function QuotePreview() {
     const wrapper = wrapperRef.current
     const doc = docRef.current
     if (!wrapper || !doc) return
-    const available = wrapper.clientWidth
+    const available = wrapper.clientWidth - 32
     const s = Math.min(available / A4_WIDTH, 1)
     setScale(s)
     setDocHeight(doc.scrollHeight)
@@ -68,23 +68,21 @@ export default function QuotePreview() {
         </div>
       </div>
 
-      <div ref={wrapperRef} className="mx-auto py-5 px-4 overflow-hidden">
+      <div ref={wrapperRef} className="mx-auto pt-5 px-4 overflow-hidden">
         <div
           ref={docRef}
           style={{
             width: `${A4_WIDTH}px`,
             transform: `scale(${scale})`,
-            transformOrigin: 'top center',
+            transformOrigin: 'top right',
             marginBottom: `${(scale - 1) * docHeight}px`,
-            marginLeft: 'auto',
-            marginRight: 'auto',
           }}
         >
           <QuoteDocument quote={quote} />
         </div>
-        <div className="max-w-lg mx-auto mt-5">
-          <ShareActions quote={quote} onStatusChange={handleStatusChange} />
-        </div>
+      </div>
+      <div className="max-w-lg mx-auto px-4 pb-8 mt-5">
+        <ShareActions quote={quote} onStatusChange={handleStatusChange} />
       </div>
     </div>
   )

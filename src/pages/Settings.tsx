@@ -335,15 +335,15 @@ function CatalogTab() {
                     <div className="flex items-center gap-1 shrink-0">
                       <button
                         onClick={() => setEditingItem({ catId: cat.id, item: { ...item } })}
-                        className="w-7 h-7 rounded-lg bg-gray-50 flex items-center justify-center touch-feedback"
+                        className="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center touch-feedback"
                       >
-                        <Pencil size={11} className="text-gray-400" />
+                        <Pencil size={13} className="text-gray-400" />
                       </button>
                       <button
                         onClick={() => handleDeleteItem(cat.id, item.id)}
-                        className="w-7 h-7 rounded-lg bg-gray-50 flex items-center justify-center touch-feedback"
+                        className="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center touch-feedback"
                       >
-                        <Trash2 size={11} className="text-gray-400" />
+                        <Trash2 size={13} className="text-gray-400" />
                       </button>
                     </div>
                   </div>
