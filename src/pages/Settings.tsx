@@ -1,241 +1,45 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  ArrowRight, Users, Layers, Plus, Pencil, Trash2, X, Check,
-  ChevronDown, ChevronUp, Phone, MapPin, Save,
+  Layers, Plus, Pencil, Trash2, X, Check,
+  ChevronDown, ChevronUp,
+  Hammer, Droplets, Paintbrush, Wrench, Building,
 } from 'lucide-react'
-import { useQuoteContext } from '../context/QuoteContext'
+import Header from '../components/layout/Header'
 import { catalog } from '../data/catalog'
 import BottomSheet from '../components/ui/BottomSheet'
-import type { Client, CatalogCategory, CatalogItem } from '../types'
+import type { CatalogCategory, CatalogItem } from '../types'
 import { v4 as uuidv4 } from 'uuid'
 
-type Tab = 'clients' | 'catalog'
+const ICON_OPTIONS = [
+  { name: 'Hammer',     Icon: Hammer },
+  { name: 'Droplets',   Icon: Droplets },
+  { name: 'Paintbrush', Icon: Paintbrush },
+  { name: 'Wrench',     Icon: Wrench },
+  { name: 'Building',   Icon: Building },
+  { name: 'Layers',     Icon: Layers },
+]
+
+const COLOR_OPTIONS = [
+  'from-amber-500 to-orange-600',
+  'from-blue-500 to-cyan-600',
+  'from-emerald-500 to-teal-600',
+  'from-red-500 to-rose-600',
+  'from-violet-500 to-purple-600',
+  'from-slate-500 to-gray-700',
+  'from-pink-500 to-fuchsia-600',
+  'from-lime-500 to-green-600',
+]
 
 export default function Settings() {
   const navigate = useNavigate()
-  const [tab, setTab] = useState<Tab>('clients')
 
   return (
     <div className="min-h-screen bg-surface pb-8">
-      {/* Header */}
-      <div className="bg-navy text-white px-5 pt-10 pb-4">
-        <div className="flex items-center justify-between max-w-lg mx-auto">
-          <button onClick={() => navigate('/')} className="p-2 -mr-2 touch-feedback">
-            <ArrowRight size={20} />
-          </button>
-          <h1 className="font-bold text-base">הגדרות</h1>
-          <div className="w-9" />
-        </div>
-      </div>
-
-      {/* Tab Switcher */}
+      <Header title="הגדרות" onBack={() => navigate('/')} />
       <div className="max-w-lg mx-auto px-5 mt-4">
-        <div className="flex bg-white rounded-xl p-1 shadow-sm border border-gray-100">
-          <button
-            onClick={() => setTab('clients')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold
-                        transition-all ${tab === 'clients'
-                          ? 'bg-accent text-white shadow-md'
-                          : 'text-gray-500'}`}
-          >
-            <Users size={16} />
-            לקוחות
-          </button>
-          <button
-            onClick={() => setTab('catalog')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold
-                        transition-all ${tab === 'catalog'
-                          ? 'bg-accent text-white shadow-md'
-                          : 'text-gray-500'}`}
-          >
-            <Layers size={16} />
-            סעיפי הצעה
-          </button>
-        </div>
+        <CatalogTab />
       </div>
-
-      {/* Content */}
-      <div className="max-w-lg mx-auto px-5 mt-4">
-        {tab === 'clients' ? <ClientsTab /> : <CatalogTab />}
-      </div>
-    </div>
-  )
-}
-
-/* ═══════════════════════════════════════════════
-   CLIENTS TAB
-   ═══════════════════════════════════════════════ */
-
-function ClientsTab() {
-  const { clients, addClient } = useQuoteContext()
-  const [editingClient, setEditingClient] = useState<Client | null>(null)
-  const [showAdd, setShowAdd] = useState(false)
-  const [search, setSearch] = useState('')
-
-  // Local state for client list editing (since context doesn't expose updateClient/deleteClient directly)
-  const [localClients, setLocalClients] = useState<Client[]>(clients)
-  const [newClient, setNewClient] = useState<Omit<Client, 'id' | 'createdAt'>>({
-    name: '', phone: '', address: '',
-  })
-
-  const filtered = localClients.filter((c) =>
-    c.name.includes(search) || c.phone.includes(search) || c.address.includes(search)
-  )
-
-  const handleAddClient = () => {
-    if (!newClient.name.trim()) return
-    const created = addClient(newClient)
-    setLocalClients((prev) => [...prev, created])
-    setNewClient({ name: '', phone: '', address: '' })
-    setShowAdd(false)
-  }
-
-  const handleUpdateClient = (updated: Client) => {
-    setLocalClients((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
-    setEditingClient(null)
-  }
-
-  const handleDeleteClient = (id: string) => {
-    setLocalClients((prev) => prev.filter((c) => c.id !== id))
-  }
-
-  return (
-    <div>
-      {/* Search + Add */}
-      <div className="flex items-center gap-2 mb-3">
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="חפש לקוח..."
-          className="flex-1 bg-white rounded-xl px-4 py-2.5 text-sm border border-gray-100
-                     outline-none focus:border-accent placeholder:text-gray-400 shadow-sm"
-        />
-        <button
-          onClick={() => setShowAdd(true)}
-          className="w-10 h-10 rounded-xl bg-accent text-white flex items-center justify-center
-                     shadow-md shadow-accent/20 touch-feedback shrink-0"
-        >
-          <Plus size={18} />
-        </button>
-      </div>
-
-      {/* Client List */}
-      <div className="space-y-2">
-        {filtered.map((client) => (
-          <div key={client.id} className="bg-white rounded-xl p-3.5 shadow-premium border border-gray-50">
-            <div className="flex items-start justify-between">
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-sm text-navy">{client.name}</h3>
-                {client.phone && (
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <Phone size={11} className="text-gray-400" />
-                    <span className="text-xs text-gray-500" dir="ltr">{client.phone}</span>
-                  </div>
-                )}
-                {client.address && (
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <MapPin size={11} className="text-gray-400" />
-                    <span className="text-xs text-gray-500">{client.address}</span>
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <button
-                  onClick={() => setEditingClient(client)}
-                  className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center touch-feedback"
-                >
-                  <Pencil size={13} className="text-gray-400" />
-                </button>
-                <button
-                  onClick={() => handleDeleteClient(client.id)}
-                  className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center touch-feedback"
-                >
-                  <Trash2 size={13} className="text-gray-400" />
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {filtered.length === 0 && (
-        <div className="text-center py-8 text-gray-400 text-sm">
-          {search ? 'לא נמצאו לקוחות' : 'אין לקוחות עדיין'}
-        </div>
-      )}
-
-      {/* Add Client Sheet */}
-      <BottomSheet isOpen={showAdd} onClose={() => setShowAdd(false)} title="לקוח חדש" snap="half">
-        <div className="space-y-3 pb-4">
-          <div>
-            <label className="text-xs font-bold text-navy mb-1 block">שם *</label>
-            <input value={newClient.name} onChange={(e) => setNewClient({ ...newClient, name: e.target.value })}
-              placeholder="שם הלקוח"
-              className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm border border-gray-100
-                         outline-none focus:border-accent placeholder:text-gray-400" />
-          </div>
-          <div>
-            <label className="text-xs font-bold text-navy mb-1 block">טלפון</label>
-            <input value={newClient.phone} onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })}
-              placeholder="050-0000000" dir="ltr"
-              className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm border border-gray-100
-                         outline-none focus:border-accent placeholder:text-gray-400 text-right" />
-          </div>
-          <div>
-            <label className="text-xs font-bold text-navy mb-1 block">כתובת</label>
-            <input value={newClient.address} onChange={(e) => setNewClient({ ...newClient, address: e.target.value })}
-              placeholder="כתובת הלקוח"
-              className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm border border-gray-100
-                         outline-none focus:border-accent placeholder:text-gray-400" />
-          </div>
-          <button onClick={handleAddClient} disabled={!newClient.name.trim()}
-            className="w-full bg-accent text-white font-bold text-base py-3.5 rounded-2xl
-                       shadow-lg shadow-accent/25 touch-feedback disabled:opacity-40 flex items-center justify-center gap-2">
-            <Plus size={18} /> הוסף לקוח
-          </button>
-        </div>
-      </BottomSheet>
-
-      {/* Edit Client Sheet */}
-      <BottomSheet
-        isOpen={!!editingClient}
-        onClose={() => setEditingClient(null)}
-        title="עריכת לקוח"
-        snap="half"
-      >
-        {editingClient && (
-          <div className="space-y-3 pb-4">
-            <div>
-              <label className="text-xs font-bold text-navy mb-1 block">שם</label>
-              <input value={editingClient.name}
-                onChange={(e) => setEditingClient({ ...editingClient, name: e.target.value })}
-                className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm border border-gray-100
-                           outline-none focus:border-accent" />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-navy mb-1 block">טלפון</label>
-              <input value={editingClient.phone}
-                onChange={(e) => setEditingClient({ ...editingClient, phone: e.target.value })}
-                dir="ltr"
-                className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm border border-gray-100
-                           outline-none focus:border-accent text-right" />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-navy mb-1 block">כתובת</label>
-              <input value={editingClient.address}
-                onChange={(e) => setEditingClient({ ...editingClient, address: e.target.value })}
-                className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm border border-gray-100
-                           outline-none focus:border-accent" />
-            </div>
-            <button onClick={() => handleUpdateClient(editingClient)}
-              className="w-full bg-accent text-white font-bold text-base py-3.5 rounded-2xl
-                         shadow-lg shadow-accent/25 touch-feedback flex items-center justify-center gap-2">
-              <Save size={18} /> שמור שינויים
-            </button>
-          </div>
-        )}
-      </BottomSheet>
     </div>
   )
 }
@@ -250,6 +54,7 @@ function CatalogTab() {
   const [expandedCat, setExpandedCat] = useState<string | null>(null)
   const [editingItem, setEditingItem] = useState<{ catId: string; item: CatalogItem } | null>(null)
   const [addingItemCatId, setAddingItemCatId] = useState<string | null>(null)
+  const [addingCategory, setAddingCategory] = useState(false)
 
   const toggleCat = (catId: string) => {
     setExpandedCat(expandedCat === catId ? null : catId)
@@ -283,6 +88,12 @@ function CatalogTab() {
       ),
     )
     setAddingItemCatId(null)
+  }
+
+  const handleAddCategory = (cat: CatalogCategory) => {
+    setCategories((prev) => [...prev, cat])
+    setAddingCategory(false)
+    setExpandedCat(cat.id)
   }
 
   return (
@@ -364,6 +175,17 @@ function CatalogTab() {
         )
       })}
 
+      {/* Add Category Button */}
+      <button
+        onClick={() => setAddingCategory(true)}
+        className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl border-2
+                   border-dashed border-accent/30 text-accent text-sm font-bold touch-feedback
+                   hover:border-accent/60 hover:bg-accent/5 transition-colors"
+      >
+        <Plus size={16} />
+        הוסף קטגוריה חדשה
+      </button>
+
       {/* Edit Item Sheet */}
       <EditItemSheet
         data={editingItem}
@@ -376,6 +198,13 @@ function CatalogTab() {
         catId={addingItemCatId}
         onClose={() => setAddingItemCatId(null)}
         onAdd={handleAddItem}
+      />
+
+      {/* Add Category Sheet */}
+      <AddCategorySheet
+        isOpen={addingCategory}
+        onClose={() => setAddingCategory(false)}
+        onAdd={handleAddCategory}
       />
     </div>
   )
@@ -627,6 +456,111 @@ function AddItemSheet({
           className="w-full bg-accent text-white font-bold text-base py-3.5 rounded-2xl
                      shadow-lg shadow-accent/25 touch-feedback disabled:opacity-40 flex items-center justify-center gap-2">
           <Plus size={18} /> הוסף סעיף
+        </button>
+      </div>
+    </BottomSheet>
+  )
+}
+
+
+/* ── Add Category Sheet ── */
+
+function AddCategorySheet({
+  isOpen,
+  onClose,
+  onAdd,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  onAdd: (cat: CatalogCategory) => void
+}) {
+  const [name, setName] = useState('')
+  const [selectedIcon, setSelectedIcon] = useState('Hammer')
+  const [selectedColor, setSelectedColor] = useState('from-amber-500 to-orange-600')
+
+  const handleAdd = () => {
+    if (!name.trim()) return
+    onAdd({
+      id: uuidv4(),
+      name: name.trim(),
+      icon: selectedIcon,
+      color: selectedColor,
+      items: [],
+    })
+    setName('')
+    setSelectedIcon('Hammer')
+    setSelectedColor('from-amber-500 to-orange-600')
+  }
+
+  return (
+    <BottomSheet isOpen={isOpen} onClose={onClose} title="קטגוריה חדשה">
+      <div className="space-y-4 pb-4">
+        {/* Name */}
+        <div>
+          <label className="text-xs font-bold text-navy mb-1 block">שם הקטגוריה *</label>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="לדוגמה: עבודות גבס"
+            className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm border border-gray-100
+                       outline-none focus:border-accent placeholder:text-gray-400"
+          />
+        </div>
+
+        {/* Icon picker */}
+        <div>
+          <label className="text-xs font-bold text-navy mb-2 block">אייקון</label>
+          <div className="flex gap-2">
+            {ICON_OPTIONS.map(({ name: iconName, Icon }) => (
+              <button
+                key={iconName}
+                onClick={() => setSelectedIcon(iconName)}
+                className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all touch-feedback
+                  ${selectedIcon === iconName
+                    ? 'bg-accent text-white shadow-lg shadow-accent/25 scale-105'
+                    : 'bg-gray-100 text-gray-500'}`}
+              >
+                <Icon size={18} />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Color picker */}
+        <div>
+          <label className="text-xs font-bold text-navy mb-2 block">צבע</label>
+          <div className="flex flex-wrap gap-2">
+            {COLOR_OPTIONS.map((color) => (
+              <button
+                key={color}
+                onClick={() => setSelectedColor(color)}
+                className={`w-9 h-9 rounded-xl bg-gradient-to-br transition-all touch-feedback ${color}
+                  ${selectedColor === color ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : ''}`}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Preview */}
+        {name.trim() && (
+          <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
+            <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${selectedColor} flex items-center justify-center`}>
+              {(() => {
+                const { Icon } = ICON_OPTIONS.find((o) => o.name === selectedIcon) ?? ICON_OPTIONS[0]
+                return <Icon size={16} className="text-white" />
+              })()}
+            </div>
+            <span className="font-bold text-sm text-navy">{name}</span>
+          </div>
+        )}
+
+        <button
+          onClick={handleAdd}
+          disabled={!name.trim()}
+          className="w-full bg-accent text-white font-bold text-base py-3.5 rounded-2xl
+                     shadow-lg shadow-accent/25 touch-feedback disabled:opacity-40 flex items-center justify-center gap-2"
+        >
+          <Plus size={18} /> הוסף קטגוריה
         </button>
       </div>
     </BottomSheet>
