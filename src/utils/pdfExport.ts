@@ -114,17 +114,25 @@ function canvasOpts(oncloneCb?: (doc: Document, el: HTMLElement) => void) {
     windowWidth: DOC_WIDTH_PX,
     onclone: (doc: Document, el: HTMLElement) => {
       el.style.transform = 'none'
-      doc.documentElement.setAttribute('dir', 'ltr')
+      doc.documentElement.setAttribute('dir', 'rtl')
 
-      // Fix html2canvas RTL text rendering bug on iOS/WebKit.
-      // html2canvas reads positions from the original RTL DOM (already correct),
-      // but renders text using the clone's direction. Forcing ltr prevents
-      // character overlap while preserving all layout positions.
+      // Fix html2canvas RTL text rendering bug on iOS/WebKit:
+      // when a cloned element has direction:rtl, html2canvas sets ctx.direction='rtl'
+      // before calling fillText(), which causes character overlap on WebKit.
+      // Fix: force direction:ltr on text-content elements only.
+      // Layout containers (table, flex, grid) are skipped so column/flex order
+      // is preserved — their direction controls child ordering, not text drawing.
+      const LAYOUT_DISPLAYS = new Set([
+        'table', 'table-row', 'table-row-group',
+        'table-header-group', 'table-footer-group',
+        'table-column', 'table-column-group',
+        'flex', 'inline-flex', 'grid', 'inline-grid',
+      ])
       for (const node of [el, ...Array.from(el.querySelectorAll<HTMLElement>('*'))]) {
         const cs = getComputedStyle(node)
-        if (cs.direction === 'rtl') {
+        if (cs.direction === 'rtl' && !LAYOUT_DISPLAYS.has(cs.display)) {
           node.style.direction = 'ltr'
-          // 'start' in RTL = right-aligned; make it explicit so it survives the ltr switch
+          // 'start' in RTL = right-aligned; pin it explicitly before ltr takes effect
           if (cs.textAlign === 'start' || cs.textAlign === '-webkit-auto') {
             node.style.textAlign = 'right'
           }
