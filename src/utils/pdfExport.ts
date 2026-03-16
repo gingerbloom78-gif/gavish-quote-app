@@ -114,18 +114,43 @@ function canvasOpts(oncloneCb?: (doc: Document, el: HTMLElement) => void) {
     windowWidth: DOC_WIDTH_PX,
     onclone: (doc: Document, el: HTMLElement) => {
       el.style.transform = 'none'
-      // Keep dir=ltr so the clone matches the live document's direction (Tailwind
-      // resets direction:ltr via its preflight, overriding the HTML dir="rtl" attr).
-      // Setting dir="rtl" here was the root cause of the iOS/WebKit fillText() bug:
-      // it made elements compute direction:rtl → html2canvas set ctx.direction='rtl'
-      // → characters pile up on each other on WebKit. Leaving the clone LTR avoids
-      // the bug entirely and keeps column/flex order matching the live preview.
-      doc.documentElement.setAttribute('dir', 'ltr')
+      // Keep RTL on root so layout containers (flex, table, tr) inherit direction:rtl
+      // and preserve the same column/flex ordering as the live preview.
+      doc.documentElement.setAttribute('dir', 'rtl')
 
-      // Remove overflow-hidden from all elements so html2canvas
-      // does not clip content that extends beyond CSS bounds
-      // (the wave-background wrappers use overflow-hidden which
-      //  inadvertently crops the rendered output)
+      // Fix iOS/WebKit html2canvas fillText() character-overlap bug.
+      // html2canvas reads computed direction from each clone element and sets
+      // ctx.direction before calling fillText(). On WebKit, ctx.direction='rtl'
+      // mis-anchors characters. Fix: force direction:ltr on text-content elements
+      // using styles read from the ORIGINAL (pre-clone) DOM, so we don't accidentally
+      // cascade ltr into layout containers (which must stay rtl for correct ordering).
+      const origRoot = document.getElementById('quote-document')
+      if (origRoot) {
+        const LAYOUT_DISPLAYS = new Set([
+          'table', 'table-row', 'table-row-group',
+          'table-header-group', 'table-footer-group',
+          'table-column', 'table-column-group',
+          'flex', 'inline-flex', 'grid', 'inline-grid',
+        ])
+
+        const origNodes = [origRoot, ...Array.from(origRoot.querySelectorAll<HTMLElement>('*'))]
+        const cloneNodes = [el, ...Array.from(el.querySelectorAll<HTMLElement>('*'))]
+        const len = Math.min(origNodes.length, cloneNodes.length)
+
+        for (let i = 0; i < len; i++) {
+          const origCs = window.getComputedStyle(origNodes[i])
+          // Only fix text-content elements; skip layout containers
+          if (origCs.direction === 'rtl' && !LAYOUT_DISPLAYS.has(origCs.display)) {
+            cloneNodes[i].style.direction = 'ltr'
+            // 'start' in RTL = right-aligned visually; pin it so ltr doesn't left-align it
+            if (origCs.textAlign === 'start' || origCs.textAlign === '-webkit-auto') {
+              cloneNodes[i].style.textAlign = 'right'
+            }
+          }
+        }
+      }
+
+      // Remove overflow:hidden so html2canvas doesn't clip wave-background wrappers
       for (const child of [el, ...Array.from(el.querySelectorAll<HTMLElement>('*'))]) {
         const ov = child.style.overflow || getComputedStyle(child).overflow
         if (ov === 'hidden') {
