@@ -105,7 +105,7 @@ function findSafeBreaks(
 
 /* ── html2canvas options shared by all renders ── */
 
-function canvasOpts(oncloneCb?: (doc: Document, el: HTMLElement) => void) {
+function canvasOpts(origEl: HTMLElement, oncloneCb?: (doc: Document, el: HTMLElement) => void) {
   return {
     scale: RENDER_SCALE,
     useCORS: true,
@@ -114,35 +114,32 @@ function canvasOpts(oncloneCb?: (doc: Document, el: HTMLElement) => void) {
     windowWidth: DOC_WIDTH_PX,
     onclone: (doc: Document, el: HTMLElement) => {
       el.style.transform = 'none'
-      // Keep RTL on root so layout containers (flex, table, tr) inherit direction:rtl
-      // and preserve the same column/flex ordering as the live preview.
       doc.documentElement.setAttribute('dir', 'rtl')
 
-      // Fix iOS/WebKit html2canvas fillText() character-overlap bug.
-      // html2canvas reads computed direction from each clone element and sets
-      // ctx.direction before calling fillText(). On WebKit, ctx.direction='rtl'
-      // mis-anchors characters. Fix: force direction:ltr on text-content elements
-      // using styles read from the ORIGINAL (pre-clone) DOM, so we don't accidentally
-      // cascade ltr into layout containers (which must stay rtl for correct ordering).
-      const origRoot = document.getElementById('quote-document')
-      if (origRoot) {
-        const LAYOUT_DISPLAYS = new Set([
-          'table', 'table-row', 'table-row-group',
-          'table-header-group', 'table-footer-group',
-          'table-column', 'table-column-group',
-          'flex', 'inline-flex', 'grid', 'inline-grid',
-        ])
+      const LAYOUT_DISPLAYS = new Set([
+        'table', 'table-row', 'table-row-group',
+        'table-header-group', 'table-footer-group',
+        'table-column', 'table-column-group',
+        'flex', 'inline-flex', 'grid', 'inline-grid',
+      ])
 
-        const origNodes = [origRoot, ...Array.from(origRoot.querySelectorAll<HTMLElement>('*'))]
-        const cloneNodes = [el, ...Array.from(el.querySelectorAll<HTMLElement>('*'))]
-        const len = Math.min(origNodes.length, cloneNodes.length)
+      // origEl is the exact element passed to html2canvas — same root as el (the clone).
+      // This ensures origNodes[i] and cloneNodes[i] correspond to the same element.
+      const origNodes = [origEl, ...Array.from(origEl.querySelectorAll<HTMLElement>('*'))]
+      const cloneNodes = [el, ...Array.from(el.querySelectorAll<HTMLElement>('*'))]
+      const len = Math.min(origNodes.length, cloneNodes.length)
 
-        for (let i = 0; i < len; i++) {
-          const origCs = window.getComputedStyle(origNodes[i])
-          // Only fix text-content elements; skip layout containers
-          if (origCs.direction === 'rtl' && !LAYOUT_DISPLAYS.has(origCs.display)) {
+      for (let i = 0; i < len; i++) {
+        const origCs = window.getComputedStyle(origNodes[i])
+        if (origCs.direction === 'rtl') {
+          if (LAYOUT_DISPLAYS.has(origCs.display)) {
+            // Explicitly pin rtl on layout containers so they can't inherit ltr
+            // from a parent text element that was set to ltr below.
+            cloneNodes[i].style.direction = 'rtl'
+          } else {
+            // Text/block element: force ltr to prevent iOS WebKit fillText() overlap bug.
             cloneNodes[i].style.direction = 'ltr'
-            // 'start' in RTL = right-aligned visually; pin it so ltr doesn't left-align it
+            // 'start' in RTL context = right-aligned; pin it so ltr doesn't left-align it.
             if (origCs.textAlign === 'start' || origCs.textAlign === '-webkit-auto') {
               cloneNodes[i].style.textAlign = 'right'
             }
@@ -153,9 +150,7 @@ function canvasOpts(oncloneCb?: (doc: Document, el: HTMLElement) => void) {
       // Remove overflow:hidden so html2canvas doesn't clip wave-background wrappers
       for (const child of [el, ...Array.from(el.querySelectorAll<HTMLElement>('*'))]) {
         const ov = child.style.overflow || getComputedStyle(child).overflow
-        if (ov === 'hidden') {
-          child.style.overflow = 'visible'
-        }
+        if (ov === 'hidden') child.style.overflow = 'visible'
       }
 
       fixClonedStyles(doc)
@@ -168,7 +163,7 @@ async function renderStamp(el: HTMLElement): Promise<HTMLCanvasElement> {
   const saved = el.style.cssText
   el.style.position = 'static'
   el.style.left = '0'
-  const canvas = await html2canvas(el, canvasOpts())
+  const canvas = await html2canvas(el, canvasOpts(el))
   el.style.cssText = saved
   return canvas
 }
@@ -271,7 +266,7 @@ export async function generatePdfBlob(_quote: Quote): Promise<Blob> {
     })
 
     // 3. Render full quote body as one tall canvas
-    const bodyCanvas = await html2canvas(quoteBody, canvasOpts())
+    const bodyCanvas = await html2canvas(quoteBody, canvasOpts(quoteBody))
 
     // 4. Calculate page heights
     const fullPageH = Math.floor(bodyCanvas.width * (A4_H_MM / A4_W_MM))
@@ -311,7 +306,7 @@ export async function generatePdfBlob(_quote: Quote): Promise<Blob> {
     // 6. Render each certificate as its own full page
     for (const certEl of certEls) {
       pdf.addPage()
-      const certCanvas = await html2canvas(certEl, canvasOpts())
+      const certCanvas = await html2canvas(certEl, canvasOpts(certEl))
       const imgData = certCanvas.toDataURL('image/jpeg', 0.98)
       const imgH = Math.min((certCanvas.height / certCanvas.width) * A4_W_MM, A4_H_MM)
       pdf.addImage(imgData, 'JPEG', 0, 0, A4_W_MM, imgH)
