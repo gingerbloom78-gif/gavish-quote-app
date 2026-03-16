@@ -1,9 +1,10 @@
 import { useMemo, useRef, useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowRight, Pencil } from 'lucide-react'
+import { Pencil } from 'lucide-react'
 import { useQuoteContext } from '../context/QuoteContext'
 import QuoteDocument from '../components/preview/QuoteDocument'
 import ShareActions from '../components/preview/ShareActions'
+import Header from '../components/layout/Header'
 import type { QuoteStatus } from '../types'
 
 const A4_WIDTH = 794
@@ -53,20 +54,18 @@ export default function QuotePreview() {
 
   return (
     <div className="min-h-screen bg-surface">
-      <div className="bg-navy text-white px-5 pt-10 pb-4">
-        <div className="flex items-center justify-between max-w-lg mx-auto">
-          <button onClick={() => navigate('/')} className="p-2 -mr-2">
-            <ArrowRight size={20} />
-          </button>
-          <h1 className="font-bold text-base">תצוגה מקדימה</h1>
+      <Header
+        title="תצוגה מקדימה"
+        onBack={() => navigate('/')}
+        action={
           <button
             onClick={() => navigate(`/quote/edit/${quote.id}`)}
-            className="p-2 -ml-2"
+            className="w-9 h-9 rounded-full bg-white/40 flex items-center justify-center touch-feedback shadow-sm"
           >
-            <Pencil size={18} />
+            <Pencil size={17} className="text-[#1e3a5f]" />
           </button>
-        </div>
-      </div>
+        }
+      />
 
       <div ref={wrapperRef} className="mx-auto pt-5 px-4 overflow-hidden">
         <div

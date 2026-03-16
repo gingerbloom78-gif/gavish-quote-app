@@ -63,6 +63,7 @@ const sampleQuotes: Quote[] = [
     ],
     notes: '',
     voiceNotes: [],
+    photos: [],
     subtotal: 12500, vatAmount: 2250, total: 14750,
     createdAt: '2026-03-01T10:00:00Z', updatedAt: '2026-03-01T10:00:00Z',
   },
@@ -85,6 +86,7 @@ const sampleQuotes: Quote[] = [
     ],
     notes: 'כולל הקמת פיגומים',
     voiceNotes: [],
+    photos: [],
     subtotal: 38250, vatAmount: 6885, total: 45135,
     createdAt: '2026-03-05T14:00:00Z', updatedAt: '2026-03-05T14:00:00Z',
   },
@@ -107,6 +109,7 @@ const sampleQuotes: Quote[] = [
     ],
     notes: '',
     voiceNotes: [],
+    photos: [],
     subtotal: 27000, vatAmount: 4860, total: 31860,
     createdAt: '2026-03-10T09:00:00Z', updatedAt: '2026-03-10T09:00:00Z',
   },
@@ -147,6 +150,36 @@ export function QuoteProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  // Realtime: keep quotes and clients in sync across devices
+  useEffect(() => {
+    if (!supabase) return
+    const sb = supabase
+
+    const channel = sb
+      .channel('db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'quotes' },
+        async () => {
+          const updated = await fetchQuotes().catch(() => null)
+          if (updated) setQuotes(updated)
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'clients' },
+        async () => {
+          const updated = await fetchClients().catch(() => null)
+          if (updated) setClients(updated)
+        },
+      )
+      .subscribe()
+
+    return () => {
+      sb.removeChannel(channel)
+    }
+  }, [])
+
   // Sync changed quotes to Supabase (tracks updatedAt to avoid redundant writes)
   const prevQuotesRef = useRef<Quote[]>([])
   useEffect(() => {
@@ -184,6 +217,7 @@ export function QuoteProvider({ children }: { children: ReactNode }) {
       lineItems: [],
       notes: '',
       voiceNotes: [],
+      photos: [],
       subtotal: 0,
       vatAmount: 0,
       total: 0,
@@ -222,6 +256,7 @@ export function QuoteProvider({ children }: { children: ReactNode }) {
       status: 'draft',
       lineItems: original.lineItems.map((li) => ({ ...li, id: uuidv4() })),
       voiceNotes: [],
+      photos: [],
       createdAt: now,
       updatedAt: now,
     }

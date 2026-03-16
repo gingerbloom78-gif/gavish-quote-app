@@ -69,6 +69,13 @@ export interface CatalogItem {
 
 export type QuoteStatus = 'draft' | 'sent' | 'approved' | 'cancelled'
 
+export interface QuotePhoto {
+  id: string
+  dataUrl: string     // base64 JPEG data URL
+  comment: string     // caption, can be empty string
+  createdAt: string
+}
+
 export interface Quote {
   id: string
   quoteNumber: string
@@ -85,6 +92,7 @@ export interface Quote {
   vatAmount: number
   total: number
   voiceNotes: VoiceNote[]
+  photos: QuotePhoto[]
   templateId?: string
   createdAt: string
   updatedAt: string

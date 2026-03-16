@@ -8,7 +8,9 @@ interface QuoteDocumentProps {
 
 export default function QuoteDocument({ quote }: QuoteDocumentProps) {
   const vatPercent = Math.round(companySettings.vatRate * 100)
-  const totalPages = companySettings.certificates.length > 0 ? 2 : 1
+  const hasPhotos = (quote.photos?.length ?? 0) > 0
+  const hasCerts = companySettings.certificates.length > 0
+  const totalPages = 1 + (hasCerts ? 1 : 0) + (hasPhotos ? 1 : 0)
 
   return (
     <div id="quote-document" className="space-y-0" style={{ width: '794px' }}>
@@ -316,9 +318,6 @@ export default function QuoteDocument({ quote }: QuoteDocumentProps) {
                     crossOrigin="anonymous"
                   />
                 )}
-                <h3 className="font-bold text-base" style={{ color: '#1e3a5f' }}>
-                  {companySettings.name}
-                </h3>
               </div>
               <span className="text-sm font-bold" style={{ color: '#2B7BAF' }}>נספחים מקצועיים</span>
             </div>
@@ -361,6 +360,81 @@ export default function QuoteDocument({ quote }: QuoteDocumentProps) {
           <div className="px-5 py-2 text-center" style={{ borderTop: '1px solid #D4EBF5' }}>
             <span className="text-xs text-gray-400" dir="ltr">
               2/{totalPages}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* ===== Photos Page ===== */}
+      {hasPhotos && (
+        <div
+          className="pdf-page-break bg-white rounded-lg shadow-lg overflow-hidden mt-5"
+          style={{ pageBreakBefore: 'always', border: '1px solid #D4EBF5' }}
+        >
+          {/* Header */}
+          <div className="relative overflow-hidden" style={{ backgroundColor: '#EAF4FA' }}>
+            <svg
+              className="absolute inset-0 w-full h-full"
+              viewBox="0 0 800 80"
+              preserveAspectRatio="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M0,0 L800,0 L800,50 Q400,80 0,55 Z" fill="#7BC4E0" opacity="0.4" />
+            </svg>
+            <div className="relative z-10 px-5 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {companySettings.logoUrl && (
+                  <img
+                    src={companySettings.logoUrl}
+                    alt=""
+                    className="h-10 w-auto object-contain"
+                    crossOrigin="anonymous"
+                  />
+                )}
+              </div>
+              <span className="text-sm font-bold" style={{ color: '#2B7BAF' }}>תמונות מהאתר</span>
+            </div>
+          </div>
+
+          {/* Photo grid */}
+          <div className="px-4 py-3">
+            <div className="grid grid-cols-2 gap-3">
+              {quote.photos?.map((photo) => (
+                <div
+                  key={photo.id}
+                  style={{
+                    border: '2px solid #7BC4E0',
+                    borderRadius: '12px',
+                    boxShadow: '0 2px 8px rgba(43,123,175,0.15)',
+                    background: '#fff',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div style={{ padding: '6px', background: '#EAF4FA' }}>
+                    <img
+                      src={photo.dataUrl}
+                      alt={photo.comment || ''}
+                      className="w-full object-contain"
+                      style={{ maxHeight: '240px', background: '#fff', display: 'block' }}
+                      crossOrigin="anonymous"
+                    />
+                  </div>
+                  {photo.comment && (
+                    <div className="px-2 py-1.5 text-center" style={{ borderTop: '1px solid #D4EBF5' }}>
+                      <p className="text-xs font-medium" style={{ color: '#1e3a5f' }}>
+                        {photo.comment}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Page number */}
+          <div className="px-5 py-2 text-center" style={{ borderTop: '1px solid #D4EBF5' }}>
+            <span className="text-xs text-gray-400" dir="ltr">
+              {totalPages}/{totalPages}
             </span>
           </div>
         </div>

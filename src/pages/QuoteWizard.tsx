@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowRight, ArrowLeft } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { useQuoteContext } from '../context/QuoteContext'
 import StepIndicator from '../components/wizard/StepIndicator'
 import CustomerForm from '../components/wizard/CustomerForm'
 import BottomBar from '../components/layout/BottomBar'
+import Header from '../components/layout/Header'
 import type { Quote } from '../types'
 
 const STEPS = ['פרטי לקוח', 'בניית הצעה']
@@ -44,17 +45,10 @@ export default function QuoteWizard() {
 
   return (
     <div className="min-h-screen bg-surface">
-      <div className="bg-navy text-white px-5 pt-10 pb-3">
-        <div className="flex items-center justify-between max-w-lg mx-auto">
-          <button onClick={() => navigate(-1)} className="p-2 -mr-2 touch-feedback">
-            <ArrowRight size={20} />
-          </button>
-          <h1 className="font-bold text-base">
-            {draft.quoteNumber ? `הצעה ${draft.quoteNumber}` : 'הצעת מחיר חדשה'}
-          </h1>
-          <div className="w-9" />
-        </div>
-      </div>
+      <Header
+        title={draft.quoteNumber ? `הצעה ${draft.quoteNumber}` : 'הצעת מחיר חדשה'}
+        onBack={() => navigate(-1)}
+      />
 
       <div className="max-w-lg mx-auto px-5">
         <StepIndicator currentStep={1} steps={STEPS} />
