@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Plus, Save } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Plus, Save, Check } from 'lucide-react'
 import BottomSheet from '../ui/BottomSheet'
 import type { QuoteLineItem } from '../../types'
 
@@ -7,11 +7,14 @@ interface CustomItemSheetProps {
   isOpen: boolean
   onClose: () => void
   onAdd: (item: Omit<QuoteLineItem, 'id' | 'lineTotal'>) => void
+  initialValues?: QuoteLineItem
+  onUpdate?: (item: QuoteLineItem) => void
+  mode?: 'add' | 'edit'
 }
 
 const UNITS = ['פריט', 'מ"ר', 'מ"א', 'יום', 'שעה', 'קומה', 'יח\'']
 
-export default function CustomItemSheet({ isOpen, onClose, onAdd }: CustomItemSheetProps) {
+export default function CustomItemSheet({ isOpen, onClose, onAdd, initialValues, onUpdate, mode = 'add' }: CustomItemSheetProps) {
   const [title, setTitle] = useState('')
   const [bullets, setBullets] = useState('')
   const [quantity, setQuantity] = useState(1)
@@ -19,27 +22,62 @@ export default function CustomItemSheet({ isOpen, onClose, onAdd }: CustomItemSh
   const [unitPrice, setUnitPrice] = useState(0)
   const [saveForReuse, setSaveForReuse] = useState(false)
 
+  useEffect(() => {
+    if (isOpen) {
+      if (mode === 'edit' && initialValues) {
+        setTitle(initialValues.title)
+        setBullets(initialValues.bullets.join('\n'))
+        setQuantity(initialValues.quantity)
+        setUnit(initialValues.unit)
+        setUnitPrice(initialValues.unitPrice)
+      } else {
+        setTitle('')
+        setBullets('')
+        setQuantity(1)
+        setUnit('פריט')
+        setUnitPrice(0)
+        setSaveForReuse(false)
+      }
+    }
+  }, [isOpen, mode, initialValues])
+
   const handleSubmit = () => {
     if (!title.trim()) return
-    onAdd({
-      title: title.trim(),
-      bullets: bullets.split('\n').filter(Boolean),
-      quantity,
-      unit,
-      unitPrice,
-      catalogItemId: undefined,
-    })
-    // Reset
-    setTitle('')
-    setBullets('')
-    setQuantity(1)
-    setUnit('פריט')
-    setUnitPrice(0)
-    setSaveForReuse(false)
+
+    if (mode === 'edit' && initialValues && onUpdate) {
+      onUpdate({
+        ...initialValues,
+        title: title.trim(),
+        bullets: bullets.split('\n').filter(Boolean),
+        quantity,
+        unit,
+        unitPrice,
+        lineTotal: quantity * unitPrice,
+      })
+      onClose()
+    } else {
+      onAdd({
+        title: title.trim(),
+        bullets: bullets.split('\n').filter(Boolean),
+        quantity,
+        unit,
+        unitPrice,
+        catalogItemId: undefined,
+      })
+      // Reset for next item
+      setTitle('')
+      setBullets('')
+      setQuantity(1)
+      setUnit('פריט')
+      setUnitPrice(0)
+      setSaveForReuse(false)
+    }
   }
 
+  const isEdit = mode === 'edit'
+
   return (
-    <BottomSheet isOpen={isOpen} onClose={onClose} title="פריט מותאם אישית">
+    <BottomSheet isOpen={isOpen} onClose={onClose} title={isEdit ? 'עריכת פריט' : 'פריט מותאם אישית'}>
       <div className="space-y-4 pb-6">
         {/* Title */}
         <div>
@@ -116,17 +154,19 @@ export default function CustomItemSheet({ isOpen, onClose, onAdd }: CustomItemSh
           </div>
         )}
 
-        {/* Save for reuse toggle */}
-        <button
-          onClick={() => setSaveForReuse(!saveForReuse)}
-          className="flex items-center gap-2 w-full touch-feedback"
-        >
-          <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-colors
-            ${saveForReuse ? 'bg-accent' : 'border-2 border-gray-300'}`}>
-            {saveForReuse && <Save size={12} className="text-white" />}
-          </div>
-          <span className="text-xs text-gray-600">שמור לשימוש עתידי</span>
-        </button>
+        {/* Save for reuse toggle — add mode only */}
+        {!isEdit && (
+          <button
+            onClick={() => setSaveForReuse(!saveForReuse)}
+            className="flex items-center gap-2 w-full touch-feedback"
+          >
+            <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-colors
+              ${saveForReuse ? 'bg-accent' : 'border-2 border-gray-300'}`}>
+              {saveForReuse && <Save size={12} className="text-white" />}
+            </div>
+            <span className="text-xs text-gray-600">שמור לשימוש עתידי</span>
+          </button>
+        )}
 
         {/* Submit */}
         <button
@@ -136,8 +176,17 @@ export default function CustomItemSheet({ isOpen, onClose, onAdd }: CustomItemSh
                      shadow-lg shadow-accent/25 touch-feedback flex items-center justify-center gap-2
                      disabled:opacity-40 disabled:shadow-none"
         >
-          <Plus size={18} />
-          הוסף פריט
+          {isEdit ? (
+            <>
+              <Check size={18} />
+              שמור שינויים
+            </>
+          ) : (
+            <>
+              <Plus size={18} />
+              הוסף פריט
+            </>
+          )}
         </button>
       </div>
     </BottomSheet>

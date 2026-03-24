@@ -10,7 +10,6 @@ export default function QuoteDocument({ quote }: QuoteDocumentProps) {
   const vatPercent = Math.round(companySettings.vatRate * 100)
   const hasPhotos = (quote.photos?.length ?? 0) > 0
   const hasCerts = companySettings.certificates.length > 0
-  const totalPages = 1 + (hasCerts ? 1 : 0) + (hasPhotos ? 1 : 0)
 
   return (
     <div id="quote-document" className="space-y-0" style={{ width: '794px' }}>
@@ -223,8 +222,11 @@ export default function QuoteDocument({ quote }: QuoteDocumentProps) {
           </ul>
         </div>
 
+        {/* ── Legal Line + Signature (kept together, no page break between) ── */}
+        <div className="avoid-break" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+
         {/* ── Legal Line ── */}
-        <div className="avoid-break px-6 pb-3" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+        <div className="px-6 pb-3">
           <p
             className="text-xs font-bold text-center rounded px-3 py-2"
             style={{ color: '#1e3a5f', border: '1px solid #7BC4E0', backgroundColor: '#EAF4FA' }}
@@ -234,7 +236,11 @@ export default function QuoteDocument({ quote }: QuoteDocumentProps) {
         </div>
 
         {/* ── Signature + Footer Wave ── */}
-        <div className="avoid-break relative overflow-hidden" style={{ minHeight: '160px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+        <div
+          data-pdf-signature="true"
+          className="relative overflow-hidden"
+          style={{ minHeight: '160px' }}
+        >
           {/* Footer wave background */}
           <svg
             className="absolute inset-0 w-full h-full"
@@ -283,13 +289,8 @@ export default function QuoteDocument({ quote }: QuoteDocumentProps) {
             </div>
           </div>
 
-          {/* Page number */}
-          <div className="relative z-10 px-5 pb-2">
-            <span className="text-xs font-medium" style={{ color: '#1e3a5f' }} dir="ltr">
-              1/{totalPages}
-            </span>
-          </div>
         </div>
+        </div>{/* end avoid-break wrapper */}
       </div>
 
       {/* ===== PAGE 2: All Certificates on One Page ===== */}
@@ -298,55 +299,66 @@ export default function QuoteDocument({ quote }: QuoteDocumentProps) {
           className="pdf-page-break bg-white rounded-lg shadow-lg overflow-hidden mt-5"
           style={{ pageBreakBefore: 'always', border: '1px solid #D4EBF5' }}
         >
-          {/* Header with wave */}
-          <div className="relative overflow-hidden" style={{ backgroundColor: '#EAF4FA' }}>
+          {/* Header — full branded wave (same as page 1) */}
+          <div className="relative overflow-hidden" style={{ backgroundColor: '#EAF4FA', minHeight: '110px' }}>
             <svg
               className="absolute inset-0 w-full h-full"
-              viewBox="0 0 800 80"
+              viewBox="0 0 800 200"
               preserveAspectRatio="none"
               xmlns="http://www.w3.org/2000/svg"
             >
-              <path d="M0,0 L800,0 L800,50 Q400,80 0,55 Z" fill="#7BC4E0" opacity="0.4" />
+              <path d="M0,0 L800,0 L800,120 Q650,180 400,140 Q150,100 0,160 Z" fill="#B8DFF0" />
+              <path d="M0,0 L800,0 L800,80 Q600,150 350,110 Q100,70 0,130 Z" fill="#7BC4E0" opacity="0.6" />
             </svg>
-            <div className="relative z-10 px-5 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {companySettings.logoUrl && (
-                  <img
-                    src={companySettings.logoUrl}
-                    alt=""
-                    className="h-10 w-auto object-contain"
-                    crossOrigin="anonymous"
-                  />
-                )}
+            <div className="relative z-10 flex items-center justify-between px-5 pt-4 pb-10">
+              {companySettings.logoUrl && (
+                <img
+                  src={companySettings.logoUrl}
+                  alt={companySettings.name}
+                  className="h-28 w-auto object-contain"
+                  crossOrigin="anonymous"
+                />
+              )}
+              <div className="flex flex-col gap-0.5 text-sm font-bold pt-1" style={{ color: '#1e3a5f' }} dir="ltr">
+                <span>{companySettings.website}</span>
+                <span>{companySettings.email}</span>
+                <span>{companySettings.phone}</span>
               </div>
-              <span className="text-sm font-bold" style={{ color: '#2B7BAF' }}>נספחים מקצועיים</span>
             </div>
           </div>
 
-          {/* All Certificates Grid */}
-          <div className="px-4 py-3">
-            <div className="grid grid-cols-3 gap-3">
+          {/* Section title */}
+          <div className="text-center py-3" style={{ borderBottom: '2px solid #7BC4E0', backgroundColor: '#EAF4FA' }}>
+            <span className="text-base font-black" style={{ color: '#2B7BAF' }}>נספחים מקצועיים</span>
+          </div>
+
+          {/* Certificates Grid — 2 columns for better proportions */}
+          <div className="px-6 py-5">
+            <div className="grid grid-cols-2 gap-5">
               {companySettings.certificates.map((cert) => (
                 <div
                   key={cert.id}
-                  className="rounded-lg overflow-hidden"
-                  style={{ border: '1px solid #D4EBF5' }}
+                  className="rounded-xl overflow-hidden"
+                  style={{
+                    border: '2px solid #7BC4E0',
+                    boxShadow: '0 2px 8px rgba(43,123,175,0.12)',
+                  }}
                 >
                   {cert.imageUrl ? (
                     <img
                       src={cert.imageUrl}
                       alt={cert.title}
-                      className="w-full h-auto"
+                      style={{ maxHeight: '260px', width: 'auto', display: 'block', margin: '0 auto' }}
                       crossOrigin="anonymous"
                     />
                   ) : (
-                    <div className="py-8 text-center" style={{ backgroundColor: '#EAF4FA' }}>
-                      <h3 className="font-bold text-xs" style={{ color: '#1e3a5f' }}>
+                    <div className="py-12 text-center" style={{ backgroundColor: '#EAF4FA' }}>
+                      <h3 className="font-bold text-sm" style={{ color: '#1e3a5f' }}>
                         {cert.title}
                       </h3>
                     </div>
                   )}
-                  <div className="px-2 py-1.5 text-center" style={{ backgroundColor: '#EAF4FA' }}>
+                  <div className="px-3 py-2 text-center" style={{ backgroundColor: '#EAF4FA', borderTop: '1px solid #D4EBF5' }}>
                     <p className="text-xs font-bold" style={{ color: '#1e3a5f' }}>
                       {cert.title}
                     </p>
@@ -356,11 +368,15 @@ export default function QuoteDocument({ quote }: QuoteDocumentProps) {
             </div>
           </div>
 
-          {/* Page Number */}
-          <div className="px-5 py-2 text-center" style={{ borderTop: '1px solid #D4EBF5' }}>
-            <span className="text-xs text-gray-400" dir="ltr">
-              2/{totalPages}
-            </span>
+          {/* Footer wave — matching page 1 signature section */}
+          <div className="relative overflow-hidden" style={{ minHeight: '80px', marginTop: 'auto' }}>
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 800 200" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M0,60 Q200,20 400,50 Q600,80 800,30 L800,200 L0,200 Z" fill="#B8DFF0" />
+              <path d="M0,90 Q250,50 500,80 Q700,110 800,70 L800,200 L0,200 Z" fill="#7BC4E0" opacity="0.5" />
+            </svg>
+            <div className="relative z-10 px-6 py-3 flex items-center justify-between">
+              <span className="text-xs font-bold" style={{ color: '#1e3a5f' }}>{companySettings.legalName}</span>
+            </div>
           </div>
         </div>
       )}
@@ -371,34 +387,42 @@ export default function QuoteDocument({ quote }: QuoteDocumentProps) {
           className="pdf-page-break bg-white rounded-lg shadow-lg overflow-hidden mt-5"
           style={{ pageBreakBefore: 'always', border: '1px solid #D4EBF5' }}
         >
-          {/* Header */}
-          <div className="relative overflow-hidden" style={{ backgroundColor: '#EAF4FA' }}>
+          {/* Header — full branded wave */}
+          <div className="relative overflow-hidden" style={{ backgroundColor: '#EAF4FA', minHeight: '110px' }}>
             <svg
               className="absolute inset-0 w-full h-full"
-              viewBox="0 0 800 80"
+              viewBox="0 0 800 200"
               preserveAspectRatio="none"
               xmlns="http://www.w3.org/2000/svg"
             >
-              <path d="M0,0 L800,0 L800,50 Q400,80 0,55 Z" fill="#7BC4E0" opacity="0.4" />
+              <path d="M0,0 L800,0 L800,120 Q650,180 400,140 Q150,100 0,160 Z" fill="#B8DFF0" />
+              <path d="M0,0 L800,0 L800,80 Q600,150 350,110 Q100,70 0,130 Z" fill="#7BC4E0" opacity="0.6" />
             </svg>
-            <div className="relative z-10 px-5 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {companySettings.logoUrl && (
-                  <img
-                    src={companySettings.logoUrl}
-                    alt=""
-                    className="h-10 w-auto object-contain"
-                    crossOrigin="anonymous"
-                  />
-                )}
+            <div className="relative z-10 flex items-center justify-between px-5 pt-4 pb-10">
+              {companySettings.logoUrl && (
+                <img
+                  src={companySettings.logoUrl}
+                  alt={companySettings.name}
+                  className="h-28 w-auto object-contain"
+                  crossOrigin="anonymous"
+                />
+              )}
+              <div className="flex flex-col gap-0.5 text-sm font-bold pt-1" style={{ color: '#1e3a5f' }} dir="ltr">
+                <span>{companySettings.website}</span>
+                <span>{companySettings.email}</span>
+                <span>{companySettings.phone}</span>
               </div>
-              <span className="text-sm font-bold" style={{ color: '#2B7BAF' }}>תמונות מהאתר</span>
             </div>
           </div>
 
+          {/* Section title */}
+          <div className="text-center py-3" style={{ borderBottom: '2px solid #7BC4E0', backgroundColor: '#EAF4FA' }}>
+            <span className="text-base font-black" style={{ color: '#2B7BAF' }}>תמונות מהאתר</span>
+          </div>
+
           {/* Photo grid */}
-          <div className="px-4 py-3">
-            <div className="grid grid-cols-2 gap-3">
+          <div className="px-6 py-5">
+            <div className="grid grid-cols-2 gap-5">
               {quote.photos?.map((photo) => (
                 <div
                   key={photo.id}
@@ -414,8 +438,7 @@ export default function QuoteDocument({ quote }: QuoteDocumentProps) {
                     <img
                       src={photo.dataUrl}
                       alt={photo.comment || ''}
-                      className="w-full object-contain"
-                      style={{ maxHeight: '240px', background: '#fff', display: 'block' }}
+                      style={{ maxHeight: '200px', width: 'auto', display: 'block', margin: '0 auto', background: '#fff' }}
                       crossOrigin="anonymous"
                     />
                   </div>
@@ -431,11 +454,15 @@ export default function QuoteDocument({ quote }: QuoteDocumentProps) {
             </div>
           </div>
 
-          {/* Page number */}
-          <div className="px-5 py-2 text-center" style={{ borderTop: '1px solid #D4EBF5' }}>
-            <span className="text-xs text-gray-400" dir="ltr">
-              {totalPages}/{totalPages}
-            </span>
+          {/* Footer wave */}
+          <div className="relative overflow-hidden" style={{ minHeight: '80px' }}>
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 800 200" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M0,60 Q200,20 400,50 Q600,80 800,30 L800,200 L0,200 Z" fill="#B8DFF0" />
+              <path d="M0,90 Q250,50 500,80 Q700,110 800,70 L800,200 L0,200 Z" fill="#7BC4E0" opacity="0.5" />
+            </svg>
+            <div className="relative z-10 px-6 py-3 flex items-center justify-between">
+              <span className="text-xs font-bold" style={{ color: '#1e3a5f' }}>{companySettings.legalName}</span>
+            </div>
           </div>
         </div>
       )}

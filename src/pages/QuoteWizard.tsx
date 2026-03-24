@@ -39,7 +39,7 @@ export default function QuoteWizard() {
   const handleContinueToBuilder = () => {
     if (draft) {
       updateQuote(draft)
-      navigate(`/quote/build/${draft.id}`)
+      navigate(`/quote/live/${draft.id}`)
     }
   }
 
