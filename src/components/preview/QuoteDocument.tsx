@@ -9,7 +9,6 @@ interface QuoteDocumentProps {
 export default function QuoteDocument({ quote }: QuoteDocumentProps) {
   const vatPercent = Math.round(companySettings.vatRate * 100)
   const hasPhotos = (quote.photos?.length ?? 0) > 0
-  const hasCerts = companySettings.certificates.length > 0
 
   return (
     <div id="quote-document" className="space-y-0" style={{ width: '794px' }}>

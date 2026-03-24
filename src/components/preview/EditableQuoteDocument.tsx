@@ -35,7 +35,7 @@ function EditableText({
   onSave: (v: string) => void
   className?: string
   style?: CSSProperties
-  nodeRef?: RefObject<HTMLElement>
+  nodeRef?: RefObject<HTMLElement | null>
 }) {
   const ownRef = useRef<HTMLElement>(null)
   const ref = nodeRef ?? ownRef
