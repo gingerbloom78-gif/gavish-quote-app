@@ -27,6 +27,8 @@ interface QuoteContextType {
   updateLineItem: (quoteId: string, item: QuoteLineItem) => void
   removeLineItem: (quoteId: string, itemId: string) => void
   duplicateLineItem: (quoteId: string, itemId: string) => void
+  insertLineItemAt: (quoteId: string, item: Omit<QuoteLineItem, 'id' | 'lineTotal'>, afterIndex: number) => void
+  reorderLineItem: (quoteId: string, itemId: string, direction: 'up' | 'down') => void
   getQuoteById: (id: string) => Quote | undefined
   addClient: (client: Omit<Client, 'id' | 'createdAt'>) => Client
 }
@@ -305,6 +307,52 @@ export function QuoteProvider({ children }: { children: ReactNode }) {
     )
   }, [])
 
+  const insertLineItemAt = useCallback(
+    (quoteId: string, item: Omit<QuoteLineItem, 'id' | 'lineTotal'>, afterIndex: number) => {
+      const newItem: QuoteLineItem = {
+        ...item,
+        id: uuidv4(),
+        lineTotal: item.quantity * item.unitPrice,
+      }
+      setQuotes((prev) =>
+        prev.map((q) => {
+          if (q.id !== quoteId) return q
+          const lineItems = [...q.lineItems]
+          if (afterIndex < 0) {
+            lineItems.push(newItem)
+          } else {
+            lineItems.splice(afterIndex + 1, 0, newItem)
+          }
+          const totals = recalculateQuoteTotals(lineItems)
+          return { ...q, lineItems, ...totals, updatedAt: new Date().toISOString() }
+        }),
+      )
+    },
+    [],
+  )
+
+  const reorderLineItem = useCallback(
+    (quoteId: string, itemId: string, direction: 'up' | 'down') => {
+      setQuotes((prev) =>
+        prev.map((q) => {
+          if (q.id !== quoteId) return q
+          const lineItems = [...q.lineItems]
+          const idx = lineItems.findIndex((li) => li.id === itemId)
+          if (idx === -1) return q
+          if (direction === 'up' && idx > 0) {
+            ;[lineItems[idx - 1], lineItems[idx]] = [lineItems[idx], lineItems[idx - 1]]
+          } else if (direction === 'down' && idx < lineItems.length - 1) {
+            ;[lineItems[idx], lineItems[idx + 1]] = [lineItems[idx + 1], lineItems[idx]]
+          } else {
+            return q
+          }
+          return { ...q, lineItems, updatedAt: new Date().toISOString() }
+        }),
+      )
+    },
+    [],
+  )
+
   const duplicateLineItem = useCallback((quoteId: string, itemId: string) => {
     setQuotes((prev) =>
       prev.map((q) => {
@@ -348,6 +396,8 @@ export function QuoteProvider({ children }: { children: ReactNode }) {
         updateLineItem,
         removeLineItem,
         duplicateLineItem,
+        insertLineItemAt,
+        reorderLineItem,
         getQuoteById,
         addClient,
       }}
