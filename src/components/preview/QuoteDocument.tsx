@@ -15,6 +15,11 @@ export default function QuoteDocument({ quote }: QuoteDocumentProps) {
       {/* ===== PAGE 1: Quote ===== */}
       <div className="bg-white rounded-lg shadow-lg overflow-hidden text-sm">
 
+        {/* ── בס״ד ── */}
+        <div className="text-right px-5 pt-2 text-xs font-bold" style={{ color: '#1e3a5f' }}>
+          בס״ד
+        </div>
+
         {/* ── Header with wave background ── */}
         <div className="relative overflow-hidden" style={{ backgroundColor: '#EAF4FA', minHeight: '110px' }}>
           <svg
@@ -51,7 +56,6 @@ export default function QuoteDocument({ quote }: QuoteDocumentProps) {
             <div className="flex flex-col gap-0.5 text-sm font-bold pt-1" style={{ color: '#1e3a5f' }} dir="ltr">
               <span>{companySettings.website}</span>
               <span>{companySettings.email}</span>
-              <span>{companySettings.phone}</span>
             </div>
           </div>
         </div>
@@ -94,7 +98,7 @@ export default function QuoteDocument({ quote }: QuoteDocumentProps) {
                   className="px-3 py-2 text-right font-bold w-[75%]"
                   style={{ border: '1px solid #7BC4E0', color: '#1e3a5f' }}
                 >
-                  האיזורים לטיפול:
+                  {quote.tableHeader ?? 'האיזורים לטיפול:'}
                 </th>
                 <th
                   className="px-3 py-2 text-center font-bold"
@@ -197,6 +201,15 @@ export default function QuoteDocument({ quote }: QuoteDocumentProps) {
                   {formatCurrency(quote.total)}
                 </td>
               </tr>
+              <tr>
+                <td
+                  colSpan={2}
+                  className="px-3 py-2 text-center text-xs font-medium"
+                  style={{ border: '1px solid #7BC4E0', backgroundColor: '#EAF4FA', color: '#2B7BAF' }}
+                >
+                  ✓ כולל אחריות מלאה על עבודות האיטום &nbsp;|&nbsp; חומרים מובחרים מהמוביל בישראל &nbsp;|&nbsp; ניקיון מלא לאחר העבודה
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -212,7 +225,7 @@ export default function QuoteDocument({ quote }: QuoteDocumentProps) {
         <div className="avoid-break px-6 py-3" style={{ borderTop: '1px solid #D4EBF5', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
           <p className="font-bold text-sm mb-2" style={{ color: '#2B7BAF' }}>הערות:</p>
           <ul className="space-y-1.5">
-            {companySettings.defaultNotes.map((note, i) => (
+            {(quote.customNotes ?? companySettings.defaultNotes).map((note, i) => (
               <li key={i} className="text-xs text-gray-700 flex items-start gap-1.5">
                 <span className="shrink-0 mt-0.5">•</span>
                 <span>{note}</span>
@@ -321,7 +334,6 @@ export default function QuoteDocument({ quote }: QuoteDocumentProps) {
               <div className="flex flex-col gap-0.5 text-sm font-bold pt-1" style={{ color: '#1e3a5f' }} dir="ltr">
                 <span>{companySettings.website}</span>
                 <span>{companySettings.email}</span>
-                <span>{companySettings.phone}</span>
               </div>
             </div>
           </div>
@@ -375,6 +387,9 @@ export default function QuoteDocument({ quote }: QuoteDocumentProps) {
             </svg>
             <div className="relative z-10 px-6 py-3 flex items-center justify-between">
               <span className="text-xs font-bold" style={{ color: '#1e3a5f' }}>{companySettings.legalName}</span>
+              {quote.subject && (
+                <span className="text-xs font-medium" style={{ color: '#1e3a5f' }}>הנדון: {quote.subject}</span>
+              )}
             </div>
           </div>
         </div>
@@ -409,7 +424,6 @@ export default function QuoteDocument({ quote }: QuoteDocumentProps) {
               <div className="flex flex-col gap-0.5 text-sm font-bold pt-1" style={{ color: '#1e3a5f' }} dir="ltr">
                 <span>{companySettings.website}</span>
                 <span>{companySettings.email}</span>
-                <span>{companySettings.phone}</span>
               </div>
             </div>
           </div>
@@ -461,6 +475,9 @@ export default function QuoteDocument({ quote }: QuoteDocumentProps) {
             </svg>
             <div className="relative z-10 px-6 py-3 flex items-center justify-between">
               <span className="text-xs font-bold" style={{ color: '#1e3a5f' }}>{companySettings.legalName}</span>
+              {quote.subject && (
+                <span className="text-xs font-medium" style={{ color: '#1e3a5f' }}>הנדון: {quote.subject}</span>
+              )}
             </div>
           </div>
         </div>

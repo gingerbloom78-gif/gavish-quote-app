@@ -1,14 +1,17 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Layers, Plus, Pencil, Trash2, X, Check,
   ChevronDown, ChevronUp,
   Hammer, Droplets, Paintbrush, Wrench, Building,
+  Building2, StickyNote, Award, Upload,
 } from 'lucide-react'
 import Header from '../components/layout/Header'
 import { catalog } from '../data/catalog'
+import { companySettings as defaultSettings } from '../data/companyInfo'
+import { loadCompanySettings, saveCompanySettings } from '../services/storage'
 import BottomSheet from '../components/ui/BottomSheet'
-import type { CatalogCategory, CatalogItem } from '../types'
+import type { CatalogCategory, CatalogItem, CompanySettings } from '../types'
 import { v4 as uuidv4 } from 'uuid'
 
 const ICON_OPTIONS = [
@@ -33,13 +36,257 @@ const COLOR_OPTIONS = [
 
 export default function Settings() {
   const navigate = useNavigate()
+  const [activeTab, setActiveTab] = useState<'catalog' | 'company'>('company')
 
   return (
     <div className="min-h-screen bg-surface pb-8">
       <Header title="הגדרות" onBack={() => navigate('/')} />
+
+      {/* Tab bar */}
       <div className="max-w-lg mx-auto px-5 mt-4">
-        <CatalogTab />
+        <div className="flex bg-white rounded-2xl p-1 shadow-sm border border-gray-100 mb-4">
+          <button
+            onClick={() => setActiveTab('company')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold transition-all
+              ${activeTab === 'company' ? 'bg-accent text-white shadow-md' : 'text-gray-500'}`}
+          >
+            <Building2 size={15} />
+            הגדרות חברה
+          </button>
+          <button
+            onClick={() => setActiveTab('catalog')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold transition-all
+              ${activeTab === 'catalog' ? 'bg-accent text-white shadow-md' : 'text-gray-500'}`}
+          >
+            <Layers size={15} />
+            קטלוג עבודות
+          </button>
+        </div>
+
+        {activeTab === 'company' ? <CompanyTab /> : <CatalogTab />}
       </div>
+    </div>
+  )
+}
+
+
+/* ═══════════════════════════════════════════════
+   COMPANY TAB — manage company info, notes, certs
+   ═══════════════════════════════════════════════ */
+
+function CompanyTab() {
+  const saved = loadCompanySettings()
+  const merged: CompanySettings = { ...defaultSettings, ...saved }
+
+  const [settings, setSettings] = useState<CompanySettings>(merged)
+  const [saveMsg, setSaveMsg] = useState(false)
+  const certImgRefs = useRef<HTMLInputElement[]>([])
+
+  const update = (updates: Partial<CompanySettings>) => {
+    setSettings((prev) => ({ ...prev, ...updates }))
+  }
+
+  const handleSave = () => {
+    saveCompanySettings(settings)
+    setSaveMsg(true)
+    setTimeout(() => setSaveMsg(false), 2000)
+  }
+
+  const handleNoteChange = (i: number, val: string) => {
+    const notes = [...settings.defaultNotes]
+    notes[i] = val
+    update({ defaultNotes: notes })
+  }
+
+  const handleDeleteNote = (i: number) => {
+    update({ defaultNotes: settings.defaultNotes.filter((_, j) => j !== i) })
+  }
+
+  const handleAddNote = () => {
+    update({ defaultNotes: [...settings.defaultNotes, ''] })
+  }
+
+  const handleCertImageUpload = (certIdx: number, file: File) => {
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      const certs = [...settings.certificates]
+      certs[certIdx] = { ...certs[certIdx], imageUrl: reader.result as string }
+      update({ certificates: certs })
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const inputClass = 'w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent'
+
+  return (
+    <div className="space-y-4">
+
+      {/* Company Info */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-3">
+        <div className="flex items-center gap-2 pb-1 border-b border-gray-100">
+          <Building2 size={15} className="text-accent" />
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">פרטי החברה</span>
+        </div>
+        {[
+          { label: 'שם החברה', key: 'name' as const },
+          { label: 'שם ליצירת קשר', key: 'contactPerson' as const },
+          { label: 'אימייל', key: 'email' as const },
+          { label: 'אתר אינטרנט', key: 'website' as const },
+          { label: 'כישורים / תעודות (כותרת)', key: 'credentials' as const },
+        ].map(({ label, key }) => (
+          <div key={key}>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{label}</label>
+            <input
+              value={settings[key] as string}
+              onChange={(e) => update({ [key]: e.target.value })}
+              className={inputClass}
+              dir="rtl"
+            />
+          </div>
+        ))}
+        <div>
+          <label className="text-xs font-medium text-gray-500 mb-1 block">שורת לגל (חתימה → הזמנת עבודה)</label>
+          <textarea
+            value={settings.legalLine}
+            onChange={(e) => update({ legalLine: e.target.value })}
+            rows={2}
+            className={inputClass + ' resize-none'}
+            dir="rtl"
+          />
+        </div>
+      </div>
+
+      {/* Default Notes */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-3">
+        <div className="flex items-center gap-2 pb-1 border-b border-gray-100">
+          <StickyNote size={15} className="text-accent" />
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">הערות ברירת מחדל</span>
+        </div>
+        {settings.defaultNotes.map((note, i) => (
+          <div key={i} className="flex gap-2 items-start">
+            <span className="text-gray-400 pt-3 shrink-0 text-sm">•</span>
+            <textarea
+              value={note}
+              onChange={(e) => handleNoteChange(i, e.target.value)}
+              rows={2}
+              className={inputClass + ' flex-1 resize-none'}
+              dir="rtl"
+            />
+            <button
+              onClick={() => handleDeleteNote(i)}
+              className="mt-2 w-7 h-7 rounded-full bg-red-50 flex items-center justify-center shrink-0"
+            >
+              <X size={13} className="text-red-400" />
+            </button>
+          </div>
+        ))}
+        <button
+          onClick={handleAddNote}
+          className="flex items-center gap-2 text-accent text-sm font-medium py-1"
+        >
+          <Plus size={15} />
+          הוסף הערה
+        </button>
+      </div>
+
+      {/* Certificates */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-3">
+        <div className="flex items-center gap-2 pb-1 border-b border-gray-100">
+          <Award size={15} className="text-accent" />
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">תעודות ודיפלומות</span>
+        </div>
+        {settings.certificates.map((cert, i) => (
+          <div key={cert.id} className="border border-gray-100 rounded-xl p-3 space-y-2">
+            {/* Header row: title + delete button */}
+            <div className="flex items-center gap-2">
+              <input
+                value={cert.title}
+                onChange={(e) => {
+                  const certs = [...settings.certificates]
+                  certs[i] = { ...certs[i], title: e.target.value }
+                  update({ certificates: certs })
+                }}
+                className={inputClass + ' flex-1'}
+                dir="rtl"
+                placeholder="שם התעודה"
+              />
+              <button
+                onClick={() => {
+                  update({ certificates: settings.certificates.filter((_, j) => j !== i) })
+                }}
+                className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center shrink-0 touch-feedback"
+                title="מחק תעודה"
+              >
+                <Trash2 size={14} className="text-red-400" />
+              </button>
+            </div>
+            {cert.imageUrl ? (
+              <div className="relative">
+                <img
+                  src={cert.imageUrl}
+                  alt={cert.title}
+                  className="w-full h-32 object-contain rounded-lg bg-gray-50 border border-gray-100"
+                />
+                <button
+                  onClick={() => {
+                    const certs = [...settings.certificates]
+                    certs[i] = { ...certs[i], imageUrl: undefined }
+                    update({ certificates: certs })
+                  }}
+                  className="absolute top-1 left-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center"
+                >
+                  <X size={11} className="text-white" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => certImgRefs.current[i]?.click()}
+                className="w-full border-2 border-dashed border-gray-200 rounded-xl py-4 flex items-center
+                           justify-center gap-2 text-xs text-gray-400 font-medium touch-feedback"
+              >
+                <Upload size={14} />
+                העלה תמונת תעודה
+              </button>
+            )}
+            <input
+              ref={(el) => { if (el) certImgRefs.current[i] = el }}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) handleCertImageUpload(i, file)
+                if (e.target) e.target.value = ''
+              }}
+            />
+          </div>
+        ))}
+        {/* Add certificate button */}
+        <button
+          onClick={() => {
+            update({
+              certificates: [
+                ...settings.certificates,
+                { id: uuidv4(), title: '', imageUrl: undefined },
+              ],
+            })
+          }}
+          className="flex items-center gap-2 text-accent text-sm font-medium py-1"
+        >
+          <Plus size={15} />
+          הוסף תעודה
+        </button>
+      </div>
+
+      {/* Save button */}
+      <button
+        onClick={handleSave}
+        className="w-full bg-accent text-white font-bold text-base py-4 rounded-2xl
+                   shadow-lg shadow-accent/30 touch-feedback flex items-center justify-center gap-2"
+      >
+        <Check size={18} />
+        {saveMsg ? 'נשמר!' : 'שמור הגדרות'}
+      </button>
     </div>
   )
 }

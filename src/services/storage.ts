@@ -3,7 +3,7 @@
  * Ready to swap for IndexedDB, Supabase, or Firebase in the future.
  */
 
-import type { Quote, Client, CatalogItem, QuoteTemplate, VoiceNote } from '../types'
+import type { Quote, Client, CatalogItem, QuoteTemplate, VoiceNote, CompanySettings } from '../types'
 
 const KEYS = {
   quotes: 'gavish_quotes',
@@ -12,6 +12,7 @@ const KEYS = {
   templates: 'gavish_templates',
   voiceNotes: 'gavish_voice_notes',
   itemUsage: 'gavish_item_usage', // id → usageCount
+  companySettings: 'gavish_company_settings',
 } as const
 
 /* ── Generic helpers ── */
@@ -97,6 +98,16 @@ export function getFrequentItemIds(limit = 10): string[] {
     .sort(([, a], [, b]) => b - a)
     .slice(0, limit)
     .map(([id]) => id)
+}
+
+/* ── Company Settings ── */
+
+export function loadCompanySettings(): Partial<CompanySettings> {
+  return read<Partial<CompanySettings>>(KEYS.companySettings, {})
+}
+
+export function saveCompanySettings(settings: Partial<CompanySettings>): void {
+  write(KEYS.companySettings, settings)
 }
 
 /* ── Init: seed sample data if empty ── */

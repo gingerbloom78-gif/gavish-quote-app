@@ -13,8 +13,11 @@ interface EditableQuoteDocumentProps {
   onReorderItem: (itemId: string, direction: 'up' | 'down') => void
   onInsertAfter: (afterIndex: number) => void
   onEditItem: (item: QuoteLineItem) => void
+  onUpdateSubject: (text: string) => void
+  onUpdateTableHeader: (text: string) => void
   onUpdateIntroText: (text: string) => void
   onUpdateNotes: (text: string) => void
+  onUpdateCustomNotes: (notes: string[]) => void
   onAddPhoto: () => void
   onAddPhotoCamera: () => void
   onDeletePhoto: (photoId: string) => void
@@ -261,8 +264,11 @@ export default function EditableQuoteDocument({
   onReorderItem,
   onInsertAfter,
   onEditItem,
+  onUpdateSubject,
+  onUpdateTableHeader,
   onUpdateIntroText,
   onUpdateNotes,
+  onUpdateCustomNotes,
   onAddPhoto,
   onAddPhotoCamera,
   onDeletePhoto,
@@ -273,8 +279,26 @@ export default function EditableQuoteDocument({
   const hasCerts = companySettings.certificates.length > 0
   const totalPages = 1 + (hasCerts ? 1 : 0) + (hasPhotos ? 1 : 0)
 
+  const subjectProps = useEditableRef(quote.subject || '', onUpdateSubject)
+  const tableHeaderProps = useEditableRef(quote.tableHeader ?? 'האיזורים לטיפול:', onUpdateTableHeader)
   const introProps = useEditableRef(quote.introText || '', onUpdateIntroText)
   const notesProps = useEditableRef(quote.notes || '', onUpdateNotes)
+
+  const activeNotes = quote.customNotes ?? companySettings.defaultNotes
+
+  const handleNoteChange = (i: number, val: string) => {
+    const updated = [...activeNotes]
+    updated[i] = val
+    onUpdateCustomNotes(updated)
+  }
+
+  const handleDeleteNote = (i: number) => {
+    onUpdateCustomNotes(activeNotes.filter((_, j) => j !== i))
+  }
+
+  const handleAddNote = () => {
+    onUpdateCustomNotes([...activeNotes, ''])
+  }
 
   return (
     <div id="quote-document" className="space-y-0" style={{ width: '794px' }}>
@@ -300,16 +324,20 @@ export default function EditableQuoteDocument({
             <div className="flex flex-col gap-0.5 text-sm font-bold pt-1" style={{ color: '#1e3a5f' }} dir="ltr">
               <span>{companySettings.website}</span>
               <span>{companySettings.email}</span>
-              <span>{companySettings.phone}</span>
             </div>
           </div>
         </div>
 
-        {/* ── Subject ── */}
+        {/* ── Subject (editable) ── */}
         <div className="text-center py-3 border-b" style={{ borderColor: '#D4EBF5' }}>
           <span className="text-base font-black" style={{ color: '#2B7BAF' }}>הנדון:</span>
           {' '}
-          <span className="text-base font-bold text-gray-800">{quote.subject}</span>
+          <span
+            className="text-base font-bold text-gray-800 outline-none border-b border-dashed border-transparent
+                       hover:border-accent/40 focus:border-accent/60 cursor-text transition-colors"
+            {...subjectProps}
+            ref={subjectProps.ref as React.RefObject<HTMLSpanElement>}
+          />
         </div>
 
         {/* ── Client Details ── */}
@@ -333,7 +361,12 @@ export default function EditableQuoteDocument({
             <thead>
               <tr style={{ backgroundColor: '#D4EBF5' }}>
                 <th className="px-3 py-2 text-right font-bold w-[75%]" style={{ border: '1px solid #7BC4E0', color: '#1e3a5f' }}>
-                  האיזורים לטיפול:
+                  <span
+                    className="outline-none cursor-text border-b border-dashed border-transparent
+                               hover:border-navy/30 focus:border-navy/60 transition-colors"
+                    {...tableHeaderProps}
+                    ref={tableHeaderProps.ref as React.RefObject<HTMLSpanElement>}
+                  />
                 </th>
                 <th className="px-3 py-2 text-center font-bold" style={{ border: '1px solid #7BC4E0', color: '#1e3a5f' }}>
                   מחיר
@@ -442,17 +475,39 @@ export default function EditableQuoteDocument({
           />
         </div>
 
-        {/* ── Notes / Terms ── */}
+        {/* ── Notes / Terms (inline editable) ── */}
         <div className="avoid-break px-6 py-3" style={{ borderTop: '1px solid #D4EBF5', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
           <p className="font-bold text-sm mb-2" style={{ color: '#2B7BAF' }}>הערות:</p>
           <ul className="space-y-1.5">
-            {companySettings.defaultNotes.map((note, i) => (
-              <li key={i} className="text-xs text-gray-700 flex items-start gap-1.5">
+            {activeNotes.map((note, i) => (
+              <li key={i} className="text-xs text-gray-700 flex items-start gap-1.5 group/note">
                 <span className="shrink-0 mt-0.5">•</span>
-                <span>{note}</span>
+                <EditableText
+                  tag="span"
+                  text={note}
+                  onSave={(v) => handleNoteChange(i, v)}
+                  className="flex-1 outline-none cursor-text border-b border-dashed border-transparent hover:border-accent/30 focus:border-accent/50 transition-colors"
+                />
+                <button
+                  data-edit-ui="true"
+                  onClick={() => handleDeleteNote(i)}
+                  className="opacity-0 group-hover/note:opacity-100 transition-opacity text-gray-300
+                             hover:text-red-400 shrink-0 mt-0.5"
+                  title="מחק הערה"
+                >
+                  <X size={11} />
+                </button>
               </li>
             ))}
           </ul>
+          <button
+            data-edit-ui="true"
+            onClick={handleAddNote}
+            className="mt-1.5 text-xs text-accent/50 hover:text-accent transition-colors flex items-center gap-1"
+          >
+            <Plus size={11} />
+            <span>+ הוסף הערה</span>
+          </button>
         </div>
 
         {/* ── Legal Line ── */}

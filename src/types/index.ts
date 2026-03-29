@@ -76,6 +76,13 @@ export interface QuotePhoto {
   createdAt: string
 }
 
+export interface AudioClip {
+  id: string
+  dataUrl: string
+  durationSec: number
+  createdAt: string
+}
+
 export interface Quote {
   id: string
   quoteNumber: string
@@ -88,10 +95,13 @@ export interface Quote {
   status: QuoteStatus
   lineItems: QuoteLineItem[]
   notes: string
+  customNotes?: string[]
+  tableHeader?: string
   subtotal: number
   vatAmount: number
   total: number
   voiceNotes: VoiceNote[]
+  audioClips?: AudioClip[]
   photos: QuotePhoto[]
   templateId?: string
   createdAt: string
