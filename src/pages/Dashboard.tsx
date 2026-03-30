@@ -29,14 +29,12 @@ export default function Dashboard() {
 
   const handleDuplicate = (id: string) => {
     const dup = duplicateQuote(id)
-    setMenuOpen(null)
     navigate(`/quote/edit/${dup.id}`)
   }
 
   const handleDelete = (id: string) => {
     if (!window.confirm('למחוק את ההצעה? לא ניתן לשחזר.')) return
     deleteQuote(id)
-    setMenuOpen(null)
   }
 
   const statusOrder: Record<string, number> = { draft: 0, sent: 1, approved: 2, cancelled: 3 }
