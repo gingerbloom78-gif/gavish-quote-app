@@ -15,13 +15,12 @@ export default function QuoteDocument({ quote }: QuoteDocumentProps) {
       {/* ===== PAGE 1: Quote ===== */}
       <div className="bg-white rounded-lg shadow-lg overflow-hidden text-sm">
 
-        {/* ── בס״ד ── */}
-        <div className="text-right px-5 pt-2 text-xs font-bold" style={{ color: '#1e3a5f' }}>
-          בס״ד
-        </div>
-
         {/* ── Header with wave background ── */}
         <div className="relative overflow-hidden" style={{ backgroundColor: '#EAF4FA', minHeight: '110px' }}>
+          {/* ── בס״ד ── */}
+          <div className="absolute top-2 left-4 text-xs font-bold z-20" style={{ color: '#1e3a5f' }}>
+            בס״ד
+          </div>
           <svg
             className="absolute inset-0 w-full h-full"
             viewBox="0 0 800 200"
@@ -178,7 +177,7 @@ export default function QuoteDocument({ quote }: QuoteDocumentProps) {
                   className="px-3 py-2 text-left font-medium"
                   style={{ border: '1px solid #7BC4E0' }}
                 >
-                  מע"מ ({vatPercent}%)
+                  מע"מ <span dir="ltr">({vatPercent}%)</span>
                 </td>
                 <td
                   className="px-3 py-2 text-center font-medium"
