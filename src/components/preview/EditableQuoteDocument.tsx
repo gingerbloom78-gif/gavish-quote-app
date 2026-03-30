@@ -308,7 +308,7 @@ export default function EditableQuoteDocument({
         {/* ── Header with wave background ── */}
         <div className="relative overflow-hidden" style={{ backgroundColor: '#EAF4FA', minHeight: '110px' }}>
           {/* ── בס״ד ── */}
-          <div className="absolute top-2 left-4 text-xs font-bold z-20" style={{ color: '#1e3a5f' }}>
+          <div className="absolute top-2 right-4 text-xs font-bold z-20" style={{ color: '#1e3a5f' }}>
             בס״ד
           </div>
           <svg

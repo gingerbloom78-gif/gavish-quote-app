@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Search, Copy, Trash2, MoreVertical, FileText } from 'lucide-react'
+import { Plus, Search, Copy, Trash2, FileText } from 'lucide-react'
 import Header from '../components/layout/Header'
 import { useQuoteContext } from '../context/QuoteContext'
 import { formatCurrency } from '../utils/formatters'
@@ -11,7 +11,7 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const { quotes, createNewQuote, updateQuote, setCurrentQuote, deleteQuote, duplicateQuote } = useQuoteContext()
   const [search, setSearch] = useState('')
-  const [menuOpen, setMenuOpen] = useState<string | null>(null)
+
 
   const handleNewQuote = () => {
     const newQuote = createNewQuote()
@@ -34,6 +34,7 @@ export default function Dashboard() {
   }
 
   const handleDelete = (id: string) => {
+    if (!window.confirm('למחוק את ההצעה? לא ניתן לשחזר.')) return
     deleteQuote(id)
     setMenuOpen(null)
   }
@@ -102,8 +103,6 @@ export default function Dashboard() {
               <QuoteCardItem
                 key={q.id}
                 quote={q}
-                menuOpen={menuOpen === q.id}
-                onToggleMenu={() => setMenuOpen(menuOpen === q.id ? null : q.id)}
                 onNavigate={() => navigate(`/quote/${q.id}`)}
                 onEdit={() => navigate(`/quote/edit/${q.id}`)}
                 onDuplicate={() => handleDuplicate(q.id)}
@@ -121,8 +120,6 @@ export default function Dashboard() {
 
 interface QuoteCardItemProps {
   quote: Quote
-  menuOpen: boolean
-  onToggleMenu: () => void
   onNavigate: () => void
   onEdit: () => void
   onDuplicate: () => void
@@ -136,7 +133,7 @@ const STATUS_STRIPE: Record<string, string> = {
   cancelled: 'bg-red-300',
 }
 
-function QuoteCardItem({ quote, menuOpen, onToggleMenu, onNavigate, onEdit, onDuplicate, onDelete }: QuoteCardItemProps) {
+function QuoteCardItem({ quote, onNavigate, onEdit, onDuplicate, onDelete }: QuoteCardItemProps) {
   const config = QUOTE_STATUS_CONFIG[quote.status]
   const stripe = STATUS_STRIPE[quote.status] ?? 'bg-gray-200'
   const date = new Date(quote.updatedAt).toLocaleDateString('he-IL', {
@@ -175,40 +172,26 @@ function QuoteCardItem({ quote, menuOpen, onToggleMenu, onNavigate, onEdit, onDu
         </div>
 
         {/* Action row */}
-        <div className="relative">
-          <div className="flex border-t border-gray-100">
-            <button onClick={onEdit}
-              className="flex-1 py-2.5 text-xs text-gray-500 font-medium touch-feedback hover:text-accent hover:bg-gray-50/70 transition-colors text-center">
-              ערוך
-            </button>
-            <div className="w-px bg-gray-100" />
-            <button onClick={onNavigate}
-              className="flex-1 py-2.5 text-xs text-accent font-bold touch-feedback hover:bg-accent/5 transition-colors text-center">
-              צפה
-            </button>
-            <div className="w-px bg-gray-100" />
-            <button
-              onClick={(e) => { e.stopPropagation(); onToggleMenu() }}
-              className="px-4 py-2.5 text-gray-400 touch-feedback hover:text-gray-600 transition-colors"
-            >
-              <MoreVertical size={14} />
-            </button>
-          </div>
-
-          {menuOpen && (
-            <div className="absolute left-2 bottom-full mb-1 bg-white rounded-xl shadow-lg border border-gray-100
-                            z-10 overflow-hidden animate-scale-in min-w-[140px]"
-                 onClick={(e) => e.stopPropagation()}>
-              <button onClick={onDuplicate}
-                className="w-full flex items-center gap-2 px-4 py-3 text-xs text-navy hover:bg-gray-50 touch-feedback">
-                <Copy size={13} /> שכפל הצעה
-              </button>
-              <button onClick={onDelete}
-                className="w-full flex items-center gap-2 px-4 py-3 text-xs text-danger hover:bg-red-50 touch-feedback">
-                <Trash2 size={13} /> מחק
-              </button>
-            </div>
-          )}
+        <div className="flex border-t border-gray-100">
+          <button onClick={onEdit}
+            className="flex-1 py-2.5 text-xs text-gray-500 font-medium touch-feedback hover:text-accent hover:bg-gray-50/70 transition-colors text-center">
+            ערוך
+          </button>
+          <div className="w-px bg-gray-100" />
+          <button onClick={onNavigate}
+            className="flex-1 py-2.5 text-xs text-accent font-bold touch-feedback hover:bg-accent/5 transition-colors text-center">
+            צפה
+          </button>
+          <div className="w-px bg-gray-100" />
+          <button onClick={onDuplicate}
+            className="px-3 py-2.5 text-gray-400 touch-feedback hover:text-navy hover:bg-gray-50 transition-colors">
+            <Copy size={14} />
+          </button>
+          <div className="w-px bg-gray-100" />
+          <button onClick={onDelete}
+            className="px-3 py-2.5 text-red-300 touch-feedback hover:text-red-500 hover:bg-red-50 transition-colors">
+            <Trash2 size={14} />
+          </button>
         </div>
       </div>
     </div>
