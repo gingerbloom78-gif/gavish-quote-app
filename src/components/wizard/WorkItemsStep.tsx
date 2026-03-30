@@ -12,6 +12,52 @@ interface WorkItemsStepProps {
   onIntroTextChange: (text: string) => void
 }
 
+function parseVoiceTranscript(text: string): { title: string; quantity: number; unit: string; unitPrice: number } {
+  const unitPatterns: [RegExp, string][] = [
+    [/מטר[י]?\s*ריבוע|מטר[י]?\s*רבוע|מ[״"]\s*ר|מ׳׳ר/g, 'מ״ר'],
+    [/מטר[י]?\s*אורך|מטר[י]?\s*ליניארי|מ[״"]\s*א/g, 'מ״א'],
+    [/קילוגרם|קילו\b|ק[״"]\s*ג/g, 'ק״ג'],
+    [/שעות?\b/g, 'שעה'],
+    [/יחידות?\b/g, 'יחידה'],
+    [/מטר\b|מ[׳']\b/g, 'מ\''],
+    [/טונות?\b/g, 'טון'],
+    [/ליטר\b/g, 'ליטר'],
+  ]
+
+  let unit = 'פריט'
+  let working = text
+
+  for (const [pattern, label] of unitPatterns) {
+    if (pattern.test(working)) {
+      unit = label
+      working = working.replace(pattern, ' ')
+      break
+    }
+  }
+
+  // Extract price: number followed by שקל/₪/ש"ח or preceded by ₪
+  let unitPrice = 0
+  const priceMatch = working.match(/(\d+(?:[.,]\d+)?)\s*(?:שקלים?|₪|ש[״"]\s*ח|שח\b)/)
+    || working.match(/(?:₪|ש[״"]\s*ח)\s*(\d+(?:[.,]\d+)?)/)
+  if (priceMatch) {
+    unitPrice = parseFloat(priceMatch[1].replace(',', '.'))
+    working = working.replace(priceMatch[0], ' ')
+  }
+
+  // Extract quantity: first standalone number remaining
+  let quantity = 1
+  const qtyMatch = working.match(/\b(\d+(?:[.,]\d+)?)\b/)
+  if (qtyMatch) {
+    quantity = parseFloat(qtyMatch[1].replace(',', '.'))
+    working = working.replace(qtyMatch[0], ' ')
+  }
+
+  // Clean up title
+  const title = working.replace(/\s+/g, ' ').trim() || text.trim()
+
+  return { title, quantity, unit, unitPrice }
+}
+
 export default function WorkItemsStep({ quote, onUpdateItems, onIntroTextChange }: WorkItemsStepProps) {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [isListening, setIsListening] = useState(false)
@@ -36,9 +82,15 @@ export default function WorkItemsStep({ quote, onUpdateItems, onIntroTextChange 
       setIsListening(false)
       setLiveTranscript('')
       if (!finalText.trim()) return
+      const parsed = parseVoiceTranscript(finalText.trim())
       const newItem: QuoteLineItem = {
-        id: uuidv4(), title: finalText.trim(), bullets: [],
-        quantity: 1, unit: 'פריט', unitPrice: 0, lineTotal: 0,
+        id: uuidv4(),
+        title: parsed.title,
+        bullets: [],
+        quantity: parsed.quantity,
+        unit: parsed.unit,
+        unitPrice: parsed.unitPrice,
+        lineTotal: calculateLineTotal(parsed.quantity, parsed.unitPrice),
       }
       onUpdateItems([...quote.lineItems, newItem])
     }
