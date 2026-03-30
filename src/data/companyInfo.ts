@@ -36,5 +36,10 @@ export const companySettings: CompanySettings = {
       title: 'דיפלומה להנדסאי בניין - מה"ט',
       imageUrl: '/certificates/diploma.png',
     },
+    {
+      id: 'cert-4',
+      title: 'תעודת רישום הנדסאי - משרד העבודה',
+      imageUrl: '/certificates/engineering-certificate.png',
+    },
   ],
 }
