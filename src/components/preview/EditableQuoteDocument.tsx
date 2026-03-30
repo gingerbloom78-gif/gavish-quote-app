@@ -635,8 +635,7 @@ export default function EditableQuoteDocument({
                   <img
                     src={photo.dataUrl}
                     alt={photo.comment || ''}
-                    className="w-full object-contain"
-                    style={{ maxHeight: '240px', background: '#fff', display: 'block' }}
+                    style={{ maxWidth: '100%', maxHeight: '240px', width: 'auto', height: 'auto', display: 'block', margin: '0 auto', background: '#fff' }}
                     crossOrigin="anonymous"
                   />
                 </div>

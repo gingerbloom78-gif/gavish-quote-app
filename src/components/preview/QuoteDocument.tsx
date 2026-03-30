@@ -450,7 +450,7 @@ export default function QuoteDocument({ quote }: QuoteDocumentProps) {
                     <img
                       src={photo.dataUrl}
                       alt={photo.comment || ''}
-                      style={{ maxHeight: '200px', width: 'auto', display: 'block', margin: '0 auto', background: '#fff' }}
+                      style={{ maxWidth: '100%', maxHeight: '200px', width: 'auto', height: 'auto', display: 'block', margin: '0 auto', background: '#fff' }}
                       crossOrigin="anonymous"
                     />
                   </div>
