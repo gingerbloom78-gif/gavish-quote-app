@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Pencil } from 'lucide-react'
+import { Plus, Pencil, Mic, MicOff } from 'lucide-react'
 import type { Quote, QuoteLineItem, CatalogItem } from '../../types'
 import { v4 as uuidv4 } from 'uuid'
 import LineItemCard from './LineItemCard'
@@ -14,6 +14,37 @@ interface WorkItemsStepProps {
 
 export default function WorkItemsStep({ quote, onUpdateItems, onIntroTextChange }: WorkItemsStepProps) {
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [isListening, setIsListening] = useState(false)
+  const [liveTranscript, setLiveTranscript] = useState('')
+
+  const handleVoiceAdd = () => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SR) return
+    let finalText = ''
+    const rec = new SR()
+    rec.lang = 'he-IL'
+    rec.interimResults = true
+    rec.continuous = false
+    rec.onstart = () => { setIsListening(true); setLiveTranscript('') }
+    rec.onresult = (e: any) => {
+      let text = ''
+      for (let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript
+      finalText = text
+      setLiveTranscript(text)
+    }
+    rec.onend = () => {
+      setIsListening(false)
+      setLiveTranscript('')
+      if (!finalText.trim()) return
+      const newItem: QuoteLineItem = {
+        id: uuidv4(), title: finalText.trim(), bullets: [],
+        quantity: 1, unit: 'פריט', unitPrice: 0, lineTotal: 0,
+      }
+      onUpdateItems([...quote.lineItems, newItem])
+    }
+    rec.onerror = () => setIsListening(false)
+    rec.start()
+  }
 
   const handleAddFromCatalog = (catalogItem: CatalogItem) => {
     const newItem: QuoteLineItem = {
@@ -89,7 +120,20 @@ export default function WorkItemsStep({ quote, onUpdateItems, onIntroTextChange 
           <Pencil size={16} />
           חופשי
         </button>
+        <button
+          onClick={handleVoiceAdd}
+          disabled={isListening}
+          className={`bg-white font-medium text-sm py-3 px-4 rounded-xl border
+                     flex items-center justify-center gap-2 active:scale-[0.98] transition-all
+                     ${isListening ? 'border-red-300 text-red-500 animate-pulse' : 'border-gray-200 text-navy'}`}
+        >
+          {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+          {isListening ? 'מקשיב...' : 'קולי'}
+        </button>
       </div>
+      {liveTranscript && (
+        <p className="text-xs text-gray-500 -mt-2 mb-3 px-1 truncate">{liveTranscript}</p>
+      )}
 
       {quote.lineItems.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
